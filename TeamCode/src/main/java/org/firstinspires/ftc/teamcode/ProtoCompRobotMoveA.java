@@ -33,7 +33,6 @@ import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -49,15 +48,17 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
  * This file tests the proto competition robot's movement
  *
  * This particular OpMode just executes movement for a four wheeled robot.
+ * This opmode prevents turning when the driver doesn't command a turn e.g. uneven motor
  */
 
-@TeleOp(name="Proto Competition Robot: Direct Movement", group="Proto Comp Robot")
+@TeleOp(name="Proto Competition Robot: Assisted Movement", group="Proto Comp Robot")
 
-public class ProtoCompRobotMoveD extends LinearOpMode {
+public class ProtoCompRobotMoveA extends LinearOpMode {
 
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
-    private DcMotor leftBackDrive, leftFrontDrive, rightBackDrive, rightFrontDrive = null;
+    private DcMotor leftBackDrive, leftFrontDrive, rightBackDrive, rightFrontDrive;
+    BNO055IMU imu;
 
     //For performance measuring
     private double prevElapsedTime = 0;
@@ -82,7 +83,22 @@ public class ProtoCompRobotMoveD extends LinearOpMode {
         rightBackDrive.setDirection(DcMotor.Direction.REVERSE);  //Motor wires are backwards, put direction to FORWARD when fixed
         rightFrontDrive.setDirection(DcMotorSimple.Direction.FORWARD);
 
+        //IMU parameters
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        parameters.angleUnit           = BNO055IMU.AngleUnit.RADIANS;
+        parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parameters.calibrationDataFile = "BNO055IMUCalibration.json"; // see the calibration sample opmode
+        parameters.loggingEnabled      = true;
+        parameters.loggingTag          = "IMU";
+        parameters.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
 
+        //IMU initialization
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        imu.initialize(parameters);
+
+        //PID controller to avoid unwanted rotation
+        HdgPID hdgHold = new HdgPID(Robot.HeadingKp,Robot.HeadingKi,Robot.HeadingKd);
+        hdgHold.minError = 0.1;
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
@@ -91,23 +107,19 @@ public class ProtoCompRobotMoveD extends LinearOpMode {
 
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
-
+            //Read orientation data from the IMU
+            Orientation angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS);
 
             // This mode uses left stick to translate, and right stick to rotate.
             // - This uses basic math to combine motions and is easier to drive straight.
             double drive = -gamepad1.left_stick_y; //Move left stick up/down to move forward/backward
             double strafe = gamepad1.left_stick_x; //Move left stick right/left to move right/left
-            double turn = -gamepad1.right_stick_x; //Move right stick right/left to turn right/left
+            double turn = -hdgHold.manage(-angles.firstAngle, -gamepad1.right_stick_x, getRuntime()); //Move right stick right/left to turn right/left. Adjust if robot is turning without driver input
 
             double leftFrontPower = Robot.stallPower(Range.clip(drive - turn + strafe, -1.0, 1.0), 0.1);
             double leftBackPower = Robot.stallPower(Range.clip(drive - turn - strafe, -1.0, 1.0),0.1);
             double rightFrontPower = Robot.stallPower(Range.clip(drive + turn - strafe, -1.0, 1.0),0.1);
             double rightBackPower = Robot.stallPower(Range.clip(drive + turn + strafe, -1.0, 1.0),0.1);
-
-            // Tank Mode uses one stick to control each wheel.
-            // - This requires no math, but it is hard to drive forward slowly and keep straight.
-            // leftPower  = -gamepad1.left_stick_y ;
-            // rightPower = -gamepad1.right_stick_y ;
 
             // Send calculated power to wheels
             leftBackDrive.setPower(leftBackPower);
@@ -115,10 +127,13 @@ public class ProtoCompRobotMoveD extends LinearOpMode {
             rightBackDrive.setPower(rightBackPower);
             rightFrontDrive.setPower(rightFrontPower);
 
-            // Show the elapsed game time and wheel power.
-            telemetry.addData("Status", "\n\tRun Time: " + runtime.toString() + "\n\tTPS: %.2f", 1/(getRuntime()-prevElapsedTime));
+            // Show the elapsed game time, performance, and wheel power.
+            telemetry.addData("Status", "\n\tRun Time: %.2f\n\tTPS: %.2f", getRuntime(), 1/(getRuntime()-prevElapsedTime));
             telemetry.addData("Motors", "\n\tLF(%.2f)\tRF(%.2f)\n\tLB(%.2f)\tRB(%.2f)",
                     leftFrontPower, rightFrontPower, leftBackPower, rightBackPower);
+            telemetry.addData("Heading: ", "%.2f°, Goal: %.2f°, Error: %.2f°", -180*angles.firstAngle/Math.PI, -180*hdgHold.goal/Math.PI, -180*hdgHold.error(angles.firstAngle)/Math.PI); //Show current heading, goal, and error of robot
+            telemetry.addData("PID status:", "p: %.2f\ti: %.2f\td: %.2f\tstate:%d", hdgHold.p(), hdgHold.i(), hdgHold.d(),hdgHold.getState()); //Show information from heading PID loop
+            telemetry.addData("Additional PID info: ", "input: %.2f, prevError: %.2f, preTime: %.2f", angles.firstAngle, hdgHold.prevError, hdgHold.dPreTime); //Even more information
             telemetry.update();
             prevElapsedTime = getRuntime();
         }

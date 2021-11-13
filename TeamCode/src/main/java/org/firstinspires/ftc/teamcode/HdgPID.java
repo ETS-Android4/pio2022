@@ -1,8 +1,8 @@
 package org.firstinspires.ftc.teamcode;
 
 //This PID loop is only to be used with RADIANS
-//This PID loop accounts for the fact that moving past PI will go to -PI
-//This PID loop may not work as intended if refresh rate is low
+//This PID loop accounts for the fact that moving past π will go to -π
+//This PID loop may not work as intended if refresh rate is very low (More than π radians/tick)
 public class HdgPID extends PIDLoop{
     private int state = 0;
     private double prevD = 1;
@@ -26,15 +26,15 @@ public class HdgPID extends PIDLoop{
     }
 
     public double update(double input, double time){
-        pTerm = calculateP(input, time);
-        iTerm = calculateI(time);
+        pTerm = calculateP(input);
+        iTerm = calculateI(input, time);
         dTerm = calculateD(input, time);
         return output();
     }
 
-    public double calculateP(double input, double time){
-        if(Math.abs(goal-input) < Math.min(Math.abs(goal + 2 * Math.PI - input), Math.abs(goal - 2 * Math.PI - input))){
-            return goal-input;
+    public double error(double input){
+        if(Math.abs(goal - input) < Math.min(Math.abs(goal + 2 * Math.PI - input), Math.abs(goal - 2 * Math.PI - input))){
+            return goal - input;
         }else if(Math.abs(goal + 2 * Math.PI -input) < Math.abs(goal - 2 * Math.PI - input)){
             return goal + 2 * Math.PI - input;
         }else{
@@ -42,24 +42,9 @@ public class HdgPID extends PIDLoop{
         }
     }
 
-    public double calculateD(double input, double time){
-
-            if (Math.abs((input - preInput) / (time - dPreTime)) < Math.min(Math.abs((input + 2 * Math.PI - preInput) / (time - dPreTime)), Math.abs((input - 2 * Math.PI - preInput) / (time - dPreTime)))) {
-                return super.calculateD(input,time);
-
-            }else if(Math.abs((input + 2 * Math.PI - preInput) / (time - dPreTime)) < Math.abs((input - 2 * Math.PI - preInput) / (time - dPreTime))){
-                return super.calculateD(input + 2 * Math.PI, time);
-
-            }else{
-                return super.calculateD(input - 2 * Math.PI, time);
-
-            }
-
-
-    }
-
     //Method to move the goal by a certain amount
     //Uses include controlling heading goal with a joystick on a gamepad
+    //Sluggish and inconsistent
     public void moveGoal(double goalChange, double time, double input){
         goal = Math.max(input-Math.PI,Math.min(input+Math.PI,goal + goalChange * (time - gPreTime)));
         if(goal < -Math.PI){
@@ -84,22 +69,15 @@ public class HdgPID extends PIDLoop{
                     return 0;
                 }
                 prevD = tempD;
-                return tempD * kd * 3;
+                return tempD * kd;
             case 2:
                 this.goal = sensorInput;
                 state--;
                 prevD = this.calculateD(sensorInput, time);
                 return -userInput;
-        }
-        /*
-        if(Math.abs(userInput) <= 0.1){
-            return this.update(sensorInput, time);
-        }else{
-            this.goal = sensorInput;
-            return userInput;
+            default:
+                throw(new IllegalStateException("Impossible heading management state"));
         }
 
-         */
-        return 0;
     }
 }

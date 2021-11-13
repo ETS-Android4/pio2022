@@ -2,7 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 public class PIDLoop {
     public double kp, ki, kd, goal, outMin, outMax, minError = 0;
-    protected double pTerm, iTerm, dTerm, preInput = 0, iPreTime = 0, dPreTime = 0, gPreTime = 0;
+    protected double pTerm, iTerm, dTerm, prevError = 0, iPreTime = 0, dPreTime = 0, gPreTime = 0;
 
     //CONSTRUCTORS
     public PIDLoop(){
@@ -34,25 +34,29 @@ public class PIDLoop {
 
     //Use this to calculate output using input and time
     public double update(double input, double time){
-        pTerm = calculateP(input, time);
-        iTerm = calculateI(time);
+        pTerm = calculateP(input);
+        iTerm = calculateI(input, time);
         dTerm = calculateD(input, time);
         return this.output();
     }
 
-    public double calculateP(double input, double time){
-        if(Math.abs(goal - input) < minError){
-            return 0;
-        }
+    public double error(double input){
         return goal - input;
     }
 
-    public double calculateI(double time){
+    public double calculateP(double input){
+        if(Math.abs(error(input)) < minError){
+            return 0;
+        }
+        return error(input);
+    }
+
+    public double calculateI(double input, double time){
         double tempI;
-        if(pTerm * kp > outMax || pTerm * kp < outMin){
+        if(error(input) * kp > outMax || error(input) * kp < outMin){
             tempI = 0;
         } else {
-            tempI = Math.min(outMax, Math.max(outMin, ki * (iTerm + pTerm * (time - iPreTime)))) / ki;
+            tempI = Math.min(outMax, Math.max(outMin, ki * (iTerm + error(input) * (time - iPreTime)))) / ki;
         }
         iPreTime = time;
         return tempI;
@@ -61,9 +65,9 @@ public class PIDLoop {
     public double calculateD(double input, double time){
         double tempD = dTerm;
         if(time != dPreTime) {
-            tempD = -((input-goal) - preInput) / (time - dPreTime);
+            tempD = ((error(input)) - prevError) / (time - dPreTime);
         }
-        preInput = input;
+        prevError = error(input);
         dPreTime = time;
         return tempD;
     }
