@@ -29,23 +29,25 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
 
 /**
- * This file tests the proto competition robot's movement
+ * This file tests the robot's sensor
  *
- * This particular OpMode just executes movement for a four wheeled robot.
+ * This particular OpMode shows sensor values and robot performance in tick per second (TPS)
  */
 
-@TeleOp(name="Basic Movement", group="Proto Comp Robot")
-
-public class ProtoCompRobotMove extends LinearOpMode {
+@TeleOp(name="Sensor Testing", group="Proto Comp Robot")
+@Disabled
+public class SensorTesting extends LinearOpMode {
 
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
@@ -68,7 +70,8 @@ public class ProtoCompRobotMove extends LinearOpMode {
         rightFrontDrive = hardwareMap.get(DcMotor.class, "right_front_drive");
         intakeMotor = hardwareMap.get(DcMotor.class, "intake_motor");
 
-        //Sensors
+        //Sensor Managers
+        ContinuousSensor2m backDistance = new ContinuousSensor2m(hardwareMap.get(DistanceSensor.class, "back_distance"), 30);
 
         // Most robots need the motor on one side to be reversed to drive forward
         // Reverse the motor that runs backwards when connected directly to the battery
@@ -83,6 +86,10 @@ public class ProtoCompRobotMove extends LinearOpMode {
         waitForStart();
         runtime.reset();
         prevElapsedTime = 0;
+        backDistance.start();
+
+        //For noise measuring
+        double max = Double.MIN_VALUE, min = Double.MAX_VALUE;
 
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
@@ -110,11 +117,16 @@ public class ProtoCompRobotMove extends LinearOpMode {
             else if(gamepad1.right_bumper) intakeMotor.setPower(1);
             else intakeMotor.setPower(0);
 
+            //Get Distances
+            double backRange = backDistance.getDistance();
+            max = Math.max(max, backRange);
+            min = Math.min(min, backRange);
 
             // Show the elapsed game time, performance, and wheel power.
             telemetry.addData("Status", "\n\tRun Time: " + runtime.toString() + "\n\tTPS: %.2f", 1/(getRuntime()-prevElapsedTime));
             telemetry.addData("Motors", "\n\tLF(%.2f)\tRF(%.2f)\n\tLB(%.2f)\tRB(%.2f)",
                     leftFrontPower, rightFrontPower, leftBackPower, rightBackPower);
+            telemetry.addData("Distances", "\n\tBack: %.2f\n\t\tMinimum: %.2f\n\t\tMaximum: %.2f", backRange, min, max);
             telemetry.update();
             prevElapsedTime = getRuntime();
         }

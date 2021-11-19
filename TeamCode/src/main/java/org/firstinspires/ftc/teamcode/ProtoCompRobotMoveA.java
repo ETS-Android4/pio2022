@@ -51,13 +51,13 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
  * This opmode prevents turning when the driver doesn't command a turn e.g. uneven motor
  */
 
-@TeleOp(name="Proto Competition Robot: Assisted Movement", group="Proto Comp Robot")
+@TeleOp(name="Assisted Movement", group="Proto Comp Robot")
 
 public class ProtoCompRobotMoveA extends LinearOpMode {
 
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
-    private DcMotor leftBackDrive, leftFrontDrive, rightBackDrive, rightFrontDrive;
+    private DcMotor leftBackDrive, leftFrontDrive, rightBackDrive, rightFrontDrive, intakeMotor;
     BNO055IMU imu;
 
     //For performance measuring
@@ -75,6 +75,7 @@ public class ProtoCompRobotMoveA extends LinearOpMode {
         leftFrontDrive = hardwareMap.get(DcMotor.class, "left_front_drive");
         rightBackDrive = hardwareMap.get(DcMotor.class, "right_back_drive");
         rightFrontDrive = hardwareMap.get(DcMotor.class, "right_front_drive");
+        intakeMotor = hardwareMap.get(DcMotor.class, "intake_motor");
 
         // Most robots need the motor on one side to be reversed to drive forward
         // Reverse the motor that runs backwards when connected directly to the battery
@@ -97,7 +98,7 @@ public class ProtoCompRobotMoveA extends LinearOpMode {
         imu.initialize(parameters);
 
         //PID controller to avoid unwanted rotation
-        HdgPID hdgHold = new HdgPID(Robot.HeadingKp,Robot.HeadingKi,Robot.HeadingKd);
+        HdgPID hdgHold = new HdgPID(CompRobot.HeadingKp, CompRobot.HeadingKi, CompRobot.HeadingKd);
         hdgHold.minError = 0.1;
 
         // Wait for the game to start (driver presses PLAY)
@@ -116,16 +117,21 @@ public class ProtoCompRobotMoveA extends LinearOpMode {
             double strafe = gamepad1.left_stick_x; //Move left stick right/left to move right/left
             double turn = -hdgHold.manage(-angles.firstAngle, -gamepad1.right_stick_x, getRuntime()); //Move right stick right/left to turn right/left. Adjust if robot is turning without driver input
 
-            double leftFrontPower = Robot.stallPower(Range.clip(drive - turn + strafe, -1.0, 1.0), 0.1);
-            double leftBackPower = Robot.stallPower(Range.clip(drive - turn - strafe, -1.0, 1.0),0.1);
-            double rightFrontPower = Robot.stallPower(Range.clip(drive + turn - strafe, -1.0, 1.0),0.1);
-            double rightBackPower = Robot.stallPower(Range.clip(drive + turn + strafe, -1.0, 1.0),0.1);
+            double leftFrontPower = CompRobot.stallPower(Range.clip(drive - turn + strafe, -1.0, 1.0), 0.1);
+            double leftBackPower = CompRobot.stallPower(Range.clip(drive - turn - strafe, -1.0, 1.0),0.1);
+            double rightFrontPower = CompRobot.stallPower(Range.clip(drive + turn - strafe, -1.0, 1.0),0.1);
+            double rightBackPower = CompRobot.stallPower(Range.clip(drive + turn + strafe, -1.0, 1.0),0.1);
 
             // Send calculated power to wheels
             leftBackDrive.setPower(leftBackPower);
             leftFrontDrive.setPower(leftFrontPower);
             rightBackDrive.setPower(rightBackPower);
             rightFrontDrive.setPower(rightFrontPower);
+
+            //Intake motor control
+            if(gamepad1.left_bumper)  intakeMotor.setPower(-1);
+            else if(gamepad1.right_bumper) intakeMotor.setPower(1);
+            else intakeMotor.setPower(0);
 
             // Show the elapsed game time, performance, and wheel power.
             telemetry.addData("Status", "\n\tRun Time: %.2f\n\tTPS: %.2f", getRuntime(), 1/(getRuntime()-prevElapsedTime));

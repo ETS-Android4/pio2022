@@ -62,18 +62,19 @@ public class HdgPID extends PIDLoop{
             case 0:
                 return this.update(sensorInput, time);
             case 1:
-                double tempD = this.calculateD(sensorInput, time);
-                if(tempD/prevD < 0){
+                dTerm = this.calculateD(sensorInput, time);
+                if(dTerm/prevD < 0){
                     this.goal = sensorInput;
                     state--;
                     return 0;
                 }
-                prevD = tempD;
-                return tempD * kd;
+                prevD = dTerm;
+                return dTerm * kd;
             case 2:
                 this.goal = sensorInput;
                 state--;
-                prevD = this.calculateD(sensorInput, time);
+                dTerm = this.calculateD(sensorInput, time);
+                prevD = dTerm;
                 return -userInput;
             default:
                 throw(new IllegalStateException("Impossible heading management state"));
