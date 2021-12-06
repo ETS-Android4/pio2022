@@ -35,6 +35,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
+import com.qualcomm.robotcore.hardware.CRServo;
 
 
 /**
@@ -49,7 +50,8 @@ public class ProtoCompRobotMove extends LinearOpMode {
 
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
-    private DcMotor leftBackDrive, leftFrontDrive, rightBackDrive, rightFrontDrive, intakeMotor;
+    private DcMotor leftBackDrive, leftFrontDrive, rightBackDrive, rightFrontDrive, intakeMotor, lifterMotor;
+    private CRServo bucketServo;
 
     //For performance measuring
     private double prevElapsedTime = 0;
@@ -67,6 +69,11 @@ public class ProtoCompRobotMove extends LinearOpMode {
         rightBackDrive = hardwareMap.get(DcMotor.class, "right_back_drive");
         rightFrontDrive = hardwareMap.get(DcMotor.class, "right_front_drive");
         intakeMotor = hardwareMap.get(DcMotor.class, "intake_motor");
+        lifterMotor = hardwareMap.get(DcMotor.class, "lifter_motor");
+        lifterMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        lifterMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER );
+
+        bucketServo = hardwareMap.get(CRServo.class, "bucket_servo");
 
         //Sensors
 
@@ -90,8 +97,8 @@ public class ProtoCompRobotMove extends LinearOpMode {
 
             // This mode uses left stick to translate, and right stick to rotate.
             // - This uses basic math to combine motions and is easier to drive straight.
-            double drive = -gamepad1.left_stick_y; //Move left stick up/down to move forward/backward
-            double strafe = gamepad1.left_stick_x; //Move left stick right/left to move right/left
+            double drive = gamepad1.left_stick_y; //Move left stick up/down to move forward/backward
+            double strafe = -gamepad1.left_stick_x; //Move left stick right/left to move right/left
             double turn = -gamepad1.right_stick_x; //Move right stick right/left to turn right/left
 
             double leftFrontPower = CompRobot.stallPower(Range.clip(drive - turn + strafe, -1.0, 1.0), 0.1);
@@ -105,6 +112,15 @@ public class ProtoCompRobotMove extends LinearOpMode {
             rightBackDrive.setPower(rightBackPower);
             rightFrontDrive.setPower(rightFrontPower);
 
+            //Control lifter motor with dpad
+            if(gamepad1.dpad_up) lifterMotor.setPower(-1);
+            else if(gamepad1.dpad_down)lifterMotor.setPower(1);
+            else lifterMotor.setPower(0);
+            //and servo
+            if(gamepad1.dpad_right) bucketServo.setPower(1);
+            else if(gamepad1.dpad_left) bucketServo.setPower(-1);
+            else bucketServo.setPower(0);
+
             //Intake motor control
             if(gamepad1.left_bumper)  intakeMotor.setPower(-1);
             else if(gamepad1.right_bumper) intakeMotor.setPower(1);
@@ -113,8 +129,9 @@ public class ProtoCompRobotMove extends LinearOpMode {
 
             // Show the elapsed game time, performance, and wheel power.
             telemetry.addData("Status", "\n\tRun Time: " + runtime.toString() + "\n\tTPS: %.2f", 1/(getRuntime()-prevElapsedTime));
-            telemetry.addData("Motors", "\n\tLF(%.2f)\tRF(%.2f)\n\tLB(%.2f)\tRB(%.2f)",
-                    leftFrontPower, rightFrontPower, leftBackPower, rightBackPower);
+            telemetry.addData("Motors", "\n\tLF(%.2f)\tRF(%.2f)\n\tLB(%.2f)\tRB(%.2f)\n\tLIFT(%d)",
+                    leftFrontPower, rightFrontPower, leftBackPower, rightBackPower,lifterMotor.getCurrentPosition());
+
             telemetry.update();
             prevElapsedTime = getRuntime();
         }

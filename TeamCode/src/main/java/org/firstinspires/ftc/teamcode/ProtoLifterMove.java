@@ -35,19 +35,23 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
+import com.qualcomm.robotcore.hardware.CRServo;
 
 
 /**
- * Delete soon, this is here just because im bad at programming.
+ * This file tests the proto competition robot's movement
+ *
+ * This particular OpMode just executes movement for a four wheeled robot.
  */
 
-@TeleOp(name="Basic Movement", group="Proto Comp Robot")
+@TeleOp(name="Lifter Movement", group="Proto Lifter")
 
-public class ClassTesting extends LinearOpMode {
+public class ProtoLifterMove extends LinearOpMode {
 
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
-    CompRobot robot;
+    private DcMotor lifter;
+    private CRServo bucket;
 
     //For performance measuring
     private double prevElapsedTime = 0;
@@ -60,54 +64,34 @@ public class ClassTesting extends LinearOpMode {
         // Initialize the hardware variables. Note that the strings used here as parameters
         // to 'get' must correspond to the names assigned during the robot configuration
         // step (using the FTC Robot Controller app on the phone).
-        robot = new CompRobot();
+        //lifter = hardwareMap.get(DcMotor.class, "lifter_motor");
+        bucket = hardwareMap.get(CRServo.class, "bucket_servo");
 
-
-        // Most robots need the motor on one side to be reversed to drive forward
-        // Reverse the motor that runs backwards when connected directly to the battery
-        robot.leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
-        robot.leftFrontDrive.setDirection(DcMotorSimple.Direction.REVERSE);
-        robot.rightBackDrive.setDirection(DcMotor.Direction.REVERSE);  //Motor wires are backwards, put direction to FORWARD when fixed
-        robot.rightFrontDrive.setDirection(DcMotorSimple.Direction.FORWARD);
-
-
+        //Sensors
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
         runtime.reset();
         prevElapsedTime = 0;
 
-        // run until the end of the match (driver presses STOP)
+        // run until the end of the match (d river presses STOP)
         while (opModeIsActive()) {
+            double servoPow;
+            //Bucket Control
+            if(gamepad1.dpad_right)servoPow = -0.3;
+            else if(gamepad1.dpad_left)servoPow = -0.3;
+            else servoPow = 0;
 
+            // Lifter control
+            //if(gamepad1.dpad_up)lifter.setPower(-1);
+            //else if(gamepad1.dpad_down)lifter.setPower(1);
+            //else lifter.setPower(0);
 
-            // This mode uses left stick to translate, and right stick to rotate.
-            // - This uses basic math to combine motions and is easier to drive straight.
-            double drive = -gamepad1.left_stick_y; //Move left stick up/down to move forward/backward
-            double strafe = gamepad1.left_stick_x; //Move left stick right/left to move right/left
-            double turn = -gamepad1.right_stick_x; //Move right stick right/left to turn right/left
-
-            double leftFrontPower = CompRobot.stallPower(Range.clip(drive - turn + strafe, -1.0, 1.0), 0.1);
-            double leftBackPower = CompRobot.stallPower(Range.clip(drive - turn - strafe, -1.0, 1.0),0.1);
-            double rightFrontPower = CompRobot.stallPower(Range.clip(drive + turn - strafe, -1.0, 1.0),0.1);
-            double rightBackPower = CompRobot.stallPower(Range.clip(drive + turn + strafe, -1.0, 1.0),0.1);
-
-            // Send calculated power to wheels
-            robot.leftBackDrive.setPower(leftBackPower);
-            robot.leftFrontDrive.setPower(leftFrontPower);
-            robot.rightBackDrive.setPower(rightBackPower);
-            robot.rightFrontDrive.setPower(rightFrontPower);
-
-            //Intake motor control
-            if(gamepad1.left_bumper)  robot.intakeMotor.setPower(-1);
-            else if(gamepad1.right_bumper) robot.intakeMotor.setPower(1);
-            else robot.intakeMotor.setPower(0);
-
-
+            bucket.setPower(servoPow);
+            
             // Show the elapsed game time, performance, and wheel power.
             telemetry.addData("Status", "\n\tRun Time: " + runtime.toString() + "\n\tTPS: %.2f", 1/(getRuntime()-prevElapsedTime));
-            telemetry.addData("Motors", "\n\tLF(%.2f)\tRF(%.2f)\n\tLB(%.2f)\tRB(%.2f)",
-                    leftFrontPower, rightFrontPower, leftBackPower, rightBackPower);
+            telemetry.addData("Motors", "\n\tLM:(%.2f)\tBS:(%.2f)",0.0, servoPow);
             telemetry.update();
             prevElapsedTime = getRuntime();
         }

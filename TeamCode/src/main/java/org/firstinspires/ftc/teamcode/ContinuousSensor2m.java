@@ -4,6 +4,8 @@ import com.qualcomm.robotcore.hardware.DistanceSensor;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
+//This class lets the robot run much better while reading a distance sensor by using multithreading
+
 public class ContinuousSensor2m extends Thread {
     private DistanceSensor Sensor;
     private double distance, refreshRate;
