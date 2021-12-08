@@ -72,19 +72,20 @@ public class ProtoCompRobotMoveM extends LinearOpMode {
 
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
-            String driveData;
+            String driveData, liftData;
 
             // This mode uses left stick to translate, and right stick to rotate.
             // - This uses basic math to combine motions and is easier to drive straight.
             driveData = robot.move(-gamepad1.left_stick_y, gamepad1.left_stick_x, -gamepad1.right_stick_x);
 
-            robot.lifter(gamepad1.dpad_up, gamepad1.dpad_down, gamepad1.dpad_right, gamepad1.dpad_left);
+            liftData = robot.lifter(gamepad1.dpad_up, gamepad1.dpad_down, gamepad1.dpad_right, gamepad1.dpad_left, getRuntime());
 
             robot.intake(gamepad1.left_bumper, gamepad1.right_bumper);
 
             // Show the elapsed game time, performance, and wheel power.
             telemetry.addData("Status", "\n\tRun Time: " + runtime.toString() + "\n\tTPS: %.2f", 1/(getRuntime()-prevElapsedTime));
             telemetry.addData("Motors", driveData);
+            telemetry.addData("Motors", liftData);
 
             telemetry.update();
             prevElapsedTime = getRuntime();

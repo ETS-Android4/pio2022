@@ -53,6 +53,7 @@ public class PIDLoop {
 
     public double calculateI(double input, double time){
         double tempI;
+        if(ki ==0)return 0;
         if(error(input) * kp > outMax || error(input) * kp < outMin){
             tempI = 0;
         } else {
