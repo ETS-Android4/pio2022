@@ -58,7 +58,7 @@ public class ProtoCompRobotMoveA extends LinearOpMode {
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
     private DcMotor leftBackDrive, leftFrontDrive, rightBackDrive, rightFrontDrive, intakeMotor;
-    BNO055IMU imu;
+    private BNO055IMU imu;
 
     //For performance measuring
     private double prevElapsedTime = 0;
