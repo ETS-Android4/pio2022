@@ -32,67 +32,67 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
-import com.qualcomm.robotcore.hardware.CRServo;
+
+import java.util.UnknownFormatConversionException;
 
 
 /**
- * This file tests the proto competition robot's movement
- *
- * This particular OpMode just executes movement for a four wheeled robot.
+ * This file is for the manual (Teleop) phase
  */
 
-@TeleOp(name="Lifter Movement", group="Proto Lifter")
-@Disabled
-public class ProtoLifterMove extends LinearOpMode {
+@TeleOp(name="TeleOp Assisted", group="Comp Robot")
+
+public class TeleOpA extends LinearOpMode {
 
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
-    private DcMotor lifter;
-    private CRServo bucket;
+    private CompRobot robot;
 
     //For performance measuring
     private double prevElapsedTime = 0;
 
     @Override
     public void runOpMode() {
+        robot = new CompRobot();
+        robot.init(hardwareMap);
+
         telemetry.addData("Status", "Initialized");
         telemetry.update();
-
-        // Initialize the hardware variables. Note that the strings used here as parameters
-        // to 'get' must correspond to the names assigned during the robot configuration
-        // step (using the FTC Robot Controller app on the phone).
-        //lifter = hardwareMap.get(DcMotor.class, "lifter_motor");
-        bucket = hardwareMap.get(CRServo.class, "bucket_servo");
-
-        //Sensors
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
         runtime.reset();
         prevElapsedTime = 0;
 
-        // run until the end of the match (d river presses STOP)
+        // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
-            double servoPow;
-            //Bucket Control
-            if(gamepad1.dpad_right)servoPow = -0.3;
-            else if(gamepad1.dpad_left)servoPow = -0.3;
-            else servoPow = 0;
+            String driveData, liftData;
 
-            // Lifter control
-            //if(gamepad1.dpad_up)lifter.setPower(-1);
-            //else if(gamepad1.dpad_down)lifter.setPower(1);
-            //else lifter.setPower(0);
+            // This mode uses left stick to translate, and right stick to rotate.
+            // - This uses basic math to combine motions and is easier to drive straight.
+            driveData = robot.move(-gamepad1.left_stick_y, gamepad1.left_stick_x, -gamepad1.right_stick_x);
 
-            bucket.setPower(servoPow);
-            
+            try {
+                liftData = robot.lifter(gamepad1.dpad_up, gamepad1.dpad_down, gamepad1.dpad_right, gamepad1.dpad_left, gamepad1.x);
+            } catch (Exception e) {
+                liftData = e.toString();
+            }
+
+            robot.intake(gamepad1.left_bumper, gamepad1.right_bumper);
+
             // Show the elapsed game time, performance, and wheel power.
             telemetry.addData("Status", "\n\tRun Time: " + runtime.toString() + "\n\tTPS: %.2f", 1/(getRuntime()-prevElapsedTime));
-            telemetry.addData("Motors", "\n\tLM:(%.2f)\tBS:(%.2f)",0.0, servoPow);
+            telemetry.addData("Motors", driveData);
+            telemetry.addData("Motors", liftData);
+            telemetry.addData("Orientation", robot.getAngles());
+
             telemetry.update();
             prevElapsedTime = getRuntime();
         }

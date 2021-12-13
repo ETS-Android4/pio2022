@@ -42,14 +42,12 @@ import java.util.UnknownFormatConversionException;
 
 
 /**
- * This file tests the proto competition robot's movement
- *
- * This particular OpMode just executes movement for a four wheeled robot.
+ * This file is for the manual (Teleop) phase
  */
 
-@TeleOp(name="Modular Code", group="Proto Comp Robot")
+@TeleOp(name="TeleOp Basic", group="Comp Robot")
 
-public class ProtoCompRobotMoveM extends LinearOpMode {
+public class TeleOpBasic extends LinearOpMode {
 
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
@@ -60,10 +58,11 @@ public class ProtoCompRobotMoveM extends LinearOpMode {
 
     @Override
     public void runOpMode() {
-        telemetry.addData("Status", "Initialized");
-        telemetry.update();
         robot = new CompRobot();
         robot.init(hardwareMap);
+
+        telemetry.addData("Status", "Initialized");
+        telemetry.update();
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
@@ -78,7 +77,11 @@ public class ProtoCompRobotMoveM extends LinearOpMode {
             // - This uses basic math to combine motions and is easier to drive straight.
             driveData = robot.move(-gamepad1.left_stick_y, gamepad1.left_stick_x, -gamepad1.right_stick_x);
 
-            liftData = robot.lifter(gamepad1.dpad_up, gamepad1.dpad_down, gamepad1.dpad_right, gamepad1.dpad_left, getRuntime());
+            try {
+                liftData = robot.lifter(gamepad1.dpad_up, gamepad1.dpad_down, gamepad1.dpad_right, gamepad1.dpad_left, gamepad1.x);
+            } catch (Exception e) {
+                liftData = e.toString();
+            }
 
             robot.intake(gamepad1.left_bumper, gamepad1.right_bumper);
 

@@ -6,9 +6,14 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.util.Range;
+import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
 /*
 * This class is used for constants that will be used for the robot.
@@ -16,10 +21,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
  */
 
 public class CompRobot {
-    //Variables for the heading PID loop, which prevents outside forces from rotating the robot
-    public static double HeadingKp = 1, HeadingKi = 0.1, HeadingKd = 0.1;
-    public static double LifterKp = 0.005, LifterKi = 0.0001, LifterKd = 0.0001;
-    private PIDLoop lifter;
+    public static double HeadingKp = 1, HeadingKi = 0.1, HeadingKd = 0.1;//Variables for the heading PID loop, which can control the robot's heading
+    public static double LifterKp = 0.005, LifterKi = 0.001, LifterKd = 0.0001;//Variables for the lifter PID loop, which controls how the lifter goes to it's target
+    public static int[] levels = {0,1800,3100};//Each number represents different levels from down to up
 
     //Below a certain power, the motors will not move but make noise
     //This function adds a minimum power to prevent that
@@ -28,9 +32,17 @@ public class CompRobot {
         return input;
     }
 
-    public DcMotor leftBackDrive, leftFrontDrive, rightBackDrive, rightFrontDrive, intakeMotor;
-    public DcMotor lifterMotor;
+    private ElapsedTime eTime  = new ElapsedTime();
+    private PIDLoop lifter;
+    private boolean preFloorSwitch = false, secFloor = false, lifterUp = false, drop = false;
+    private double rServoStart;
+    private double[] rServoDuration = {0, 0.8};
+    private int rServoPhase = 0;
+
+    public DcMotor leftBackDrive, leftFrontDrive, rightBackDrive, rightFrontDrive, intakeMotor,lifterMotor;
     public CRServo bucketServo;
+    public BNO055IMU imu;
+
 
     public void init(HardwareMap components){
 
@@ -40,7 +52,10 @@ public class CompRobot {
         rightFrontDrive = components.get(DcMotor.class, "right_front_drive");
         intakeMotor = components.get(DcMotor.class, "intake_motor");
         lifterMotor = components.get(DcMotor.class, "lifter_motor");
+
         bucketServo = components.get(CRServo.class, "bucket_servo");
+
+        imu = components.get(BNO055IMU.class, "imu");
 
         // Most robots need the motor on one side to be reversed to drive forward
         // Reverse the motor that runs backwards when connected directly to the battery
@@ -53,6 +68,11 @@ public class CompRobot {
         leftFrontDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         rightBackDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         rightFrontDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        parameters.angleUnit           = BNO055IMU.AngleUnit.RADIANS;
+        parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        imu.initialize(parameters);
 
         lifter = new PIDLoop(LifterKp, LifterKi, LifterKd, 0, -1, 1);
         lifter.minError=15;
@@ -69,7 +89,7 @@ public class CompRobot {
 
     public String move(double drive, double strafe, double turn){
         drive = -drive;
-        strafe = -strafe;//We switch the direction of the robot from intake front to intake back
+        strafe = -strafe;//We switched the direction of the robot from intake front to intake back
         double leftFrontPower = CompRobot.stallPower(Range.clip(drive - turn + strafe, -1.0, 1.0), 0.1);
         double leftBackPower = CompRobot.stallPower(Range.clip(drive - turn - strafe, -1.0, 1.0),0.1);
         double rightFrontPower = CompRobot.stallPower(Range.clip(drive + turn - strafe, -1.0, 1.0),0.1);
@@ -100,28 +120,78 @@ public class CompRobot {
         }
     }
 
-    public String lifter(boolean up, boolean down, boolean forward, boolean back, double time){
-        if(up){
+    public String lifter(boolean up, boolean down, boolean forward, boolean back, boolean floorSwitch) throws Exception {
+
+        if((up || !floorSwitch && preFloorSwitch && lifterUp) && !drop){
             lifter.kp = LifterKp;
             lifter.ki = LifterKi;
-            lifter.goal = 2600;
-            //
+            lifterUp = true;
+            if(secFloor)lifter.goal = levels[1];
+            else lifter.goal = levels[2];
 
+        } else if(down && lifterUp){
+            drop = true;
+            rServoPhase = 1;
+            rServoStart = eTime.time();
+            lifter.kp = 2*LifterKp;
+            lifter.ki = 0*LifterKi;
         }
-        else if(down){
-            lifter.kp = 0.05*LifterKp;
-            lifter.ki = 0;
-            lifter.goal = 0;
+        switch(rServoPhase){
+            case 0:
+                break;
+            case 1:
+                bucketServo.setPower(-1);
+                if(rServoStart + rServoDuration[0] > eTime.time()){
+                    break;
+                }
+                lifter.goal = levels[1];
+                rServoPhase = 2;
+            case 2:
+                bucketServo.setPower(0);
+                if(Math.abs(lifter.error(lifterMotor.getCurrentPosition())) > lifter.minError) {
+
+                    break;}
+                rServoPhase = 3;
+                rServoStart = eTime.time();
+            case 3:
+                bucketServo.setPower(-0.3);
+                if(rServoStart + rServoDuration[1] > eTime.time()){
+                    break;
+                }
+                bucketServo.setPower(0);
+                lifter.goal = levels[0];
+                rServoPhase = 0;
+                drop = false;
+                lifterUp = false;
+                break;
+            default:
+                throw new Exception("How");
+        }
+
+        if(floorSwitch && !preFloorSwitch){
+            secFloor = !secFloor;
         }
 
 
-        lifterMotor.setPower(stallPower(-lifter.update(lifterMotor.getCurrentPosition(), time),0.05));
+        lifterMotor.setPower(stallPower(-lifter.update(lifterMotor.getCurrentPosition(), eTime.time()),0.05));
 
-        if(forward)bucketServo.setPower(1);
-        else if(back)bucketServo.setPower(-1);
-        else bucketServo.setPower(0);
+        if(forward && !drop)bucketServo.setPower(1);
+        else if(back && !drop)bucketServo.setPower(-1);
+        else if(!drop) bucketServo.setPower(0);
 
-        return "LIFTER MOTOR| POS: " + lifterMotor.getCurrentPosition() + " POW: " + lifterMotor.getPower() + " ACTIVE: " + lifterMotor.isBusy() +
-                "\nP: " + lifter.p() + " I: " + lifter.i() + " D: " + lifter.d() + " OUTPUT: " + lifter.output();
+        preFloorSwitch = floorSwitch;
+
+        return "LIFTER MOTOR| POS: " + lifterMotor.getCurrentPosition() + " POW: " + lifterMotor.getPower() +
+                "\n\t" + String.format("PID : (%.2f, %.2f, %.2f)", lifter.p(), lifter.i(), lifter.d()) + " OUTPUT: " + lifter.output() +
+                "\n\tSECOND FLOOR: " + secFloor + " SERVO PHASE: " + rServoPhase;
+    }
+
+    public String carousel(boolean on){
+        return "All good";
+    }
+
+    public String getAngles(){
+        Orientation angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES);
+        return String.format("(%.2f, %.2f, %.2f)", angles.firstAngle, angles.secondAngle, angles.thirdAngle);
     }
 }

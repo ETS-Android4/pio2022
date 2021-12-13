@@ -1,7 +1,8 @@
+/*
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -51,11 +52,11 @@ public class ProtoCompRobotMove extends LinearOpMode {
         prevElapsedTime = 0;
 
         //Convert from the counts per revolution of the encoder to counts per inch
-        static final double HD_COUNTS_PER_REV = 28;
-        static final double DRIVE_GEAR_REDUCTION = 20.15293;
-        static final double WHEEL_CIRCUMFERENCE_MM = 90 * Math.PI;
-        static final double DRIVE_COUNTS_PER_MM = (HD_COUNTS_PER_REV * DRIVE_GEAR_REDUCTION) / WHEEL_CIRCUMFERENCE_MM;
-        static final double DRIVE_COUNTS_PER_IN = DRIVE_COUNTS_PER_MM * 25.4;
+        final double HD_COUNTS_PER_REV = 28;
+        final double DRIVE_GEAR_REDUCTION = 20.15293;
+        final double WHEEL_CIRCUMFERENCE_MM = 90 * Math.PI;
+        final double DRIVE_COUNTS_PER_MM = (HD_COUNTS_PER_REV * DRIVE_GEAR_REDUCTION) / WHEEL_CIRCUMFERENCE_MM;
+        final double DRIVE_COUNTS_PER_IN = DRIVE_COUNTS_PER_MM * 25.4;
 
 
         private void drive(double power, double leftBackInches, double leftFrontInches, double rightBackInches, double rightFrontInches) {
@@ -103,4 +104,4 @@ public class ProtoCompRobotMove extends LinearOpMode {
             }
         }
 }
-
+*/
