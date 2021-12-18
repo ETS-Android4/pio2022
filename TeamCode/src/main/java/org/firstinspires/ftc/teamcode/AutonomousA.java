@@ -66,6 +66,7 @@ public class AutonomousA extends LinearOpMode {
 
     static final double     FORWARD_SPEED = 0.6;
     static final double     TURN_SPEED    = 0.5;
+    static final double     STRAFE_SPEED  = 0.5;
 
     @Override
     public void runOpMode() {
@@ -85,13 +86,41 @@ public class AutonomousA extends LinearOpMode {
 
         // Step through each leg of the path, ensuring that the Auto mode has not been stopped along the way
 
-        // Step 1:  Drive Forwards for 5 Seconds
-        robot.move(FORWARD_SPEED, 0, 0);
+
+        // Step 1:  Move right a bit and drive Forwards for 5 Seconds
+        robot.move(0, STRAFE_SPEED, 0);
         runtime.reset();
-        while (opModeIsActive() && (runtime.seconds() < 5.0)) {
-            telemetry.addData("Path", "Leg 3: %2.5f S Elapsed", runtime.seconds());
+        while (opModeIsActive() && (runtime.seconds() < 1)) {
+            telemetry.addData("Path", "Leg 1: %2.5f S Elapsed", runtime.seconds());
             telemetry.update();
         }
+
+        //STEP 2: Drive Forwards for 5 Seconds
+        robot.move(FORWARD_SPEED, 0, 0);
+        runtime.reset();
+        while (opModeIsActive() && (runtime.seconds() < 4.8)) {
+            telemetry.addData("Path", "Leg 1: %2.5f S Elapsed", runtime.seconds());
+            telemetry.update();
+        }
+        robot.move(0,0,0);
+
+        // Step 2: Move the carousel
+        robot.carousel(true);
+        runtime.reset();
+        while(opModeIsActive() && (runtime.seconds() < 3.0)) {
+            telemetry.addData("Path", "Leg 2: %2.5f S Elapsed", runtime.seconds());
+            telemetry.update();
+        }
+
+        // Step 3:  Drive Backward for 10 Seconds
+        robot.move(-FORWARD_SPEED, 0, 0);
+        runtime.reset();
+        while (opModeIsActive() && (runtime.seconds() < 5.0)) {
+            telemetry.addData("Path", "Leg 1: %2.5f S Elapsed", runtime.seconds());
+            telemetry.update();
+        }
+        robot.move(0,0,0);
+
 
         telemetry.addData("Path", "Complete");
         telemetry.update();
