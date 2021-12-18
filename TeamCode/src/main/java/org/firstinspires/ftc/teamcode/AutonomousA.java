@@ -92,7 +92,7 @@ public class AutonomousA extends LinearOpMode {
             telemetry.addData("Path", "Leg 1: %2.5f S Elapsed", runtime.seconds());
             telemetry.update();
         }
-
+        /*
         // Step 2:  Spin right for 1.3 seconds
         robot.move(0, TURN_SPEED, 0);
         runtime.reset();
@@ -107,7 +107,7 @@ public class AutonomousA extends LinearOpMode {
         while (opModeIsActive() && (runtime.seconds() < 1.0)) {
             telemetry.addData("Path", "Leg 3: %2.5f S Elapsed", runtime.seconds());
             telemetry.update();
-        }
+        }*/
 
         telemetry.addData("Path", "Complete");
         telemetry.update();

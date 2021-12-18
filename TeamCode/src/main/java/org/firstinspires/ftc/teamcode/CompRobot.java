@@ -59,10 +59,10 @@ public class CompRobot {
 
         // Most robots need the motor on one side to be reversed to drive forward
         // Reverse the motor that runs backwards when connected directly to the battery
-        leftBackDrive.setDirection(DcMotor.Direction.FORWARD);
+        leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
         leftFrontDrive.setDirection(DcMotorSimple.Direction.REVERSE);
         rightBackDrive.setDirection(DcMotor.Direction.REVERSE);  //Motor wires are backwards, put direction to FORWARD when fixed
-        rightFrontDrive.setDirection(DcMotorSimple.Direction.FORWARD);
+        rightFrontDrive.setDirection(DcMotorSimple.Direction.REVERSE);
 
         leftBackDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         leftFrontDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
