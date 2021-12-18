@@ -3,8 +3,6 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -39,7 +37,8 @@ public class CompRobot {
     private double[] rServoDuration = {0, 0.8};
     private int rServoPhase = 0;
 
-    public DcMotor leftBackDrive, leftFrontDrive, rightBackDrive, rightFrontDrive, intakeMotor,lifterMotor;
+    public DcMotor leftBackDrive, leftFrontDrive, rightBackDrive, rightFrontDrive, intakeMotor,
+            lifterMotor, carouselMotor;
     public CRServo bucketServo;
     public BNO055IMU imu;
 
@@ -52,6 +51,7 @@ public class CompRobot {
         rightFrontDrive = components.get(DcMotor.class, "right_front_drive");
         intakeMotor = components.get(DcMotor.class, "intake_motor");
         lifterMotor = components.get(DcMotor.class, "lifter_motor");
+        carouselMotor = components.get(DcMotor.class, "carousel_motor");
 
         bucketServo = components.get(CRServo.class, "bucket_servo");
 
@@ -60,29 +60,40 @@ public class CompRobot {
         // Most robots need the motor on one side to be reversed to drive forward
         // Reverse the motor that runs backwards when connected directly to the battery
         leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
-        leftFrontDrive.setDirection(DcMotorSimple.Direction.REVERSE);
+        leftFrontDrive.setDirection(DcMotor.Direction.REVERSE);
         rightBackDrive.setDirection(DcMotor.Direction.REVERSE);  //Motor wires are backwards, put direction to FORWARD when fixed
-        rightFrontDrive.setDirection(DcMotorSimple.Direction.FORWARD);
+        rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
+        lifterMotor.setDirection(DcMotor.Direction.FORWARD);
+        carouselMotor.setDirection(DcMotor.Direction.FORWARD);
+
+        lifterMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         leftBackDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         leftFrontDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         rightBackDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         rightFrontDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        carouselMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        lifterMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-        parameters.angleUnit           = BNO055IMU.AngleUnit.RADIANS;
-        parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
-        imu.initialize(parameters);
+        carouselMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         lifter = new PIDLoop(LifterKp, LifterKi, LifterKd, 0, -1, 1);
         lifter.minError=15;
 
-        lifterMotor.setDirection(DcMotorEx.Direction.FORWARD);
+
         //lifterMotor.setPower(0.5);
-        lifterMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
 
-        lifterMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+
+
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        parameters.angleUnit           = BNO055IMU.AngleUnit.RADIANS;
+        parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parameters.calibrationDataFile = "BNO055IMUCalibration.json"; // see the calibration sample opmode
+        parameters.loggingEnabled      = true;
+        parameters.loggingTag          = "IMU";
+        imu.initialize(parameters);
 
 
     }
@@ -109,15 +120,13 @@ public class CompRobot {
     public String intake(boolean forward, boolean backward){
         //Intake motor control
         if(backward){
-            this.intakeMotor.setPower(-1);
-            return "IM: FULL OUT";
+            intakeMotor.setPower(-0.45);
         } else if(forward){
-            this.intakeMotor.setPower(1);
-            return "IM: FULL IN";
+            intakeMotor.setPower(0.45);
         } else {
-            this.intakeMotor.setPower(0);
-            return "IM: STBY";
+            intakeMotor.setPower(0);
         }
+        return String.format("IM: %.2f", intakeMotor.getPower());
     }
 
     public String lifter(boolean up, boolean down, boolean forward, boolean back, boolean floorSwitch) throws Exception {
@@ -187,7 +196,9 @@ public class CompRobot {
     }
 
     public String carousel(boolean on){
-        return "All good";
+        if(on)carouselMotor.setPower(0.5);
+        else carouselMotor.setPower(0);
+        return String.format("CM: %.2f", carouselMotor.getPower());
     }
 
     public String getAngles(){
