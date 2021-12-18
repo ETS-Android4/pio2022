@@ -44,7 +44,7 @@ import java.util.UnknownFormatConversionException;
 
 
 /**
- * This file is for the manual (Teleop) phase
+ * This file is for the manual (TeleOp) phase
  */
 
 @TeleOp(name="TeleOp Assisted", group="Comp Robot")
