@@ -78,14 +78,14 @@ public class TeleOpBasic extends LinearOpMode {
             driveData = robot.move(-gamepad1.left_stick_y, gamepad1.left_stick_x, -gamepad1.right_stick_x);
 
             try {
-                liftData = robot.lifter(gamepad1.dpad_up, gamepad1.dpad_down, gamepad1.dpad_right, gamepad1.dpad_left, gamepad1.x);
+                liftData = robot.lifter(gamepad2.dpad_up, gamepad2.dpad_down, gamepad2.dpad_right, gamepad2.dpad_left, gamepad2.x);
             } catch (Exception e) {
                 liftData = e.toString();
             }
 
-            robot.intake(gamepad1.left_bumper, gamepad1.right_bumper);
+            robot.intake(gamepad2.left_bumper, gamepad2.right_bumper);
 
-            robot.carousel(gamepad1.y);
+            robot.carousel(gamepad2.y);
 
             // Show the elapsed game time, performance, and wheel power.
             telemetry.addData("Status", "\n\tRun Time: " + runtime.toString() + "\n\tTPS: %.2f", 1/(getRuntime()-prevElapsedTime));

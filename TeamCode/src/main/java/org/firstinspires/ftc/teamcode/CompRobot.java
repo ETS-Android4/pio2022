@@ -35,7 +35,7 @@ public class CompRobot {
     private PIDLoop lifter;
     private boolean preFloorSwitch = false, secFloor = false, lifterUp = false, drop = false;
     private double rServoStart;
-    private double[] rServoDuration = {0, 0.8};
+    private double[] rServoDuration = {0, 0};
     private int rServoPhase = 0;
 
     public DcMotor leftBackDrive, leftFrontDrive, rightBackDrive, rightFrontDrive, intakeMotor,
@@ -102,6 +102,7 @@ public class CompRobot {
     public String move(double drive, double strafe, double turn){
         drive = -drive;
         strafe = -strafe;//We switched the direction of the robot from intake front to intake back
+        turn = -turn;
         double leftFrontPower = CompRobot.stallPower(Range.clip(drive - turn + strafe, -1.0, 1.0), 0.1);
         double leftBackPower = CompRobot.stallPower(Range.clip(drive - turn - strafe, -1.0, 1.0),0.1);
         double rightFrontPower = CompRobot.stallPower(Range.clip(drive + turn - strafe, -1.0, 1.0),0.1);
