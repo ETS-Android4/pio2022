@@ -115,7 +115,7 @@ public class AutonomousA extends LinearOpMode {
         // Step 3:  Drive Backward for 10 Seconds
         robot.move(-FORWARD_SPEED, 0, 0);
         runtime.reset();
-        while (opModeIsActive() && (runtime.seconds() < 5.0)) {
+        while (opModeIsActive() && (runtime.seconds() < 10.0)) {
             telemetry.addData("Path", "Leg 1: %2.5f S Elapsed", runtime.seconds());
             telemetry.update();
         }
