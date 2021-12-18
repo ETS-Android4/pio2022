@@ -122,9 +122,9 @@ public class CompRobot {
     public String intake(boolean forward, boolean backward){
         //Intake motor control
         if(backward){
-            intakeMotor.setPower(-0.45);
+            intakeMotor.setPower(-0.60);
         } else if(forward){
-            intakeMotor.setPower(0.45);
+            intakeMotor.setPower(0.60);
         } else {
             intakeMotor.setPower(0);
         }
