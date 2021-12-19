@@ -86,7 +86,7 @@ public class TeleOpBasic extends LinearOpMode {
             robot.intake(gamepad2.left_bumper, gamepad2.right_bumper);
 
             robot.carousel_blue(gamepad2.b);
-            robot.carousel_red(gamepad2.y);
+            //robot.carousel_red(gamepad2.y);
 
             // Show the elapsed game time, performance, and wheel power.
             telemetry.addData("Status", "\n\tRun Time: " + runtime.toString() + "\n\tTPS: %.2f", 1/(getRuntime()-prevElapsedTime));
