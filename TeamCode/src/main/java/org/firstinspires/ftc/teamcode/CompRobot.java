@@ -198,11 +198,12 @@ public class CompRobot {
     }
 
     public String carousel_blue(boolean on){
-        if(on)carouselMotor.setPower(0.99);
+        if(on)carouselMotor.setPower(0.25);
         else carouselMotor.setPower(0);
         return String.format("CM: %.2f", carouselMotor.getPower());
     }
-/*
+
+    /*
     public String carousel_red(boolean on){
         if(on)carouselMotor.setPower(-0.25);
         else carouselMotor.setPower(0);
