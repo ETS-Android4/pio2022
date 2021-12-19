@@ -95,7 +95,7 @@ public class AutonomousA extends LinearOpMode {
             telemetry.update();
         }
 
-        //STEP 2: Drive Forwards for 5 Seconds
+        //STEP 2: Drive Forwards for 4.5 Seconds
         robot.move(FORWARD_SPEED, 0, 0);
         runtime.reset();
         while (opModeIsActive() && (runtime.seconds() < 4.5)) {
