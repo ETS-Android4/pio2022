@@ -197,8 +197,14 @@ public class CompRobot {
                 "\n\tSECOND FLOOR: " + secFloor + " SERVO PHASE: " + rServoPhase;
     }
 
-    public String carousel(boolean on){
+    public String carousel_blue(boolean on){
         if(on)carouselMotor.setPower(0.25);
+        else carouselMotor.setPower(0);
+        return String.format("CM: %.2f", carouselMotor.getPower());
+    }
+
+    public String carousel_red(boolean on){
+        if(on)carouselMotor.setPower(-0.25);
         else carouselMotor.setPower(0);
         return String.format("CM: %.2f", carouselMotor.getPower());
     }
