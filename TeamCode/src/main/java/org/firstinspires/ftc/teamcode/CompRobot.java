@@ -93,13 +93,6 @@ public class CompRobot {
         lifter = new PIDLoop(LifterKp, LifterKi, LifterKd, 0, -1, 1);
         lifter.minError=15;
 
-
-        //lifterMotor.setPower(0.5);
-
-
-
-
-
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
         parameters.angleUnit           = BNO055IMU.AngleUnit.RADIANS;
         parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
@@ -107,8 +100,6 @@ public class CompRobot {
         parameters.loggingEnabled      = true;
         parameters.loggingTag          = "IMU";
         imu.initialize(parameters);
-
-
     }
 
     public void initVuforia(HardwareMap components) {
