@@ -3,16 +3,21 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import java.util.List;
 import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.ClassFactory;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
+import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
 
 /*
 * This class is used for constants that will be used for the robot.
@@ -20,6 +25,13 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
  */
 
 public class CompRobot {
+    private static final String VUFORIA_KEY =
+            "AVdeq0n/////AAABmVubfnY43U00u/7C9jL7D7oEhvoAVlRtTnRA0jLBMU5XVhldSJ69NqUCXighmROl5CFKotznVZCqEwgbVZHaCjGDE8WQOeaNsYvRwx1qOon8A707S2Pq6HkDu+zP5R0RUfyL/SgchAbEYTwmhMlk09JmA21ex+vQKrz4ICh7Pu6F4+M304VCrk38wIJpnN6Oa9ElxvqXfJkt8Nv4gLeCJbIoawnR/b7x8VSMGXjPdnMPcCQDpNCFMnXR5PA75q1oMeAXgmjQ/302AD6SqOIop0bzdOSr2tH+mBt+HPPGO8clJ/TS7sCV8MSMTSTFPlxn/yF44XSUCu6n1+HJaMOwW7OnYVjmFJlmlJbKn7tM+KKS";
+    private VuforiaLocalizer vuforia;
+    private TFObjectDetector tfod;
+    private static final String TFOD_MODEL_ASSET = "FreightFrenzy_BCDM.tflite";
+    private static final String[] LABELS = {"Ball", "Cube", "Duck", "Marker"};
+
     public static double HeadingKp = 1, HeadingKi = 0.1, HeadingKd = 0.1;//Variables for the heading PID loop, which can control the robot's heading
     public static double LifterKp = 0.005, LifterKi = 0.001, LifterKd = 0.0001;//Variables for the lifter PID loop, which controls how the lifter goes to it's target
     public static int[] levels = {0,1800,3100};//Each number represents different levels from down to up
@@ -97,6 +109,38 @@ public class CompRobot {
         imu.initialize(parameters);
 
 
+    }
+
+    public void initVuforia(HardwareMap components) {
+        /*
+         * Configure Vuforia by creating a Parameter object, and passing it to the Vuforia engine.
+         */
+        VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
+
+        parameters.vuforiaLicenseKey = VUFORIA_KEY;
+        parameters.cameraName = components.get(WebcamName.class, "Webcam 1");
+
+        //  Instantiate the Vuforia engine
+        vuforia = ClassFactory.getInstance().createVuforia(parameters);
+
+        // Loading trackables is not necessary for the TensorFlow Object Detection engine.
+        int tfodMonitorViewId = components.appContext.getResources().getIdentifier(
+                "tfodMonitorViewId", "id", components.appContext.getPackageName());
+        TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(tfodMonitorViewId);
+        tfodParameters.minResultConfidence = 0.8f;
+        tfodParameters.isModelTensorFlow2 = true;
+        tfodParameters.inputSize = 320;
+        tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
+        tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABELS);
+
+        if (tfod != null) {
+            tfod.activate();
+            tfod.setZoom(2.5, 16.0/9.0);
+        }
+    }
+
+    public List<Recognition> runTFod(){
+        return tfod.getUpdatedRecognitions();
     }
 
     public String move(double drive, double strafe, double turn){
