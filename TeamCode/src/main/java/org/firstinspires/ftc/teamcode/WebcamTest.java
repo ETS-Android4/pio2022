@@ -72,7 +72,6 @@ public class WebcamTest extends LinearOpMode {
             List<Recognition> objects = robot.runTFod();
 
             // Show the elapsed game time, performance, and wheel power.
-            telemetry.addData("Status", "\n\tRun Time: " + runtime.toString() + "\n\tTPS: %.2f", 1/(getRuntime()-prevElapsedTime));
             int i = 0;
             if (objects!= null) {
                 for (Recognition recognition : objects) {
@@ -87,7 +86,8 @@ public class WebcamTest extends LinearOpMode {
             else{
                 telemetry.addData("No objects", "");
             }
-
+            sleep(100);
+            telemetry.addData("Status", "\n\tRun Time: " + runtime.toString() + "\n\tTPS: %.2f", 1/(getRuntime()-prevElapsedTime));
             telemetry.update();
             prevElapsedTime = getRuntime();
         }
