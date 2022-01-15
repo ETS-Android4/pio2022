@@ -197,18 +197,13 @@ public class CompRobot {
                 "\n\tSECOND FLOOR: " + secFloor + " SERVO PHASE: " + rServoPhase;
     }
 
-    public String carousel_blue(boolean on){
-        if(on)carouselMotor.setPower(0.25);
+    public String carousel(boolean forward, boolean backward){
+        if(forward)carouselMotor.setPower(0.25);
+        else if (backward) carouselMotor.setPower(-0.25);
         else carouselMotor.setPower(0);
         return String.format("CM: %.2f", carouselMotor.getPower());
     }
 
-    /*
-    public String carousel_red(boolean on){
-        if(on)carouselMotor.setPower(-0.25);
-        else carouselMotor.setPower(0);
-        return String.format("CM: %.2f", carouselMotor.getPower());
-    }*/
 
     public String getAngles(){
         Orientation angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES);
