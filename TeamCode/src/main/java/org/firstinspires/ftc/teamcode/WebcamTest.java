@@ -42,7 +42,7 @@ import java.util.List;
  * This file is for the manual (Teleop) phase
  */
 
-@TeleOp(name="TeleOp Basic", group="Comp Robot")
+@TeleOp(name="Webcam Test", group="Comp Robot")
 
 public class WebcamTest extends LinearOpMode {
 
@@ -56,7 +56,6 @@ public class WebcamTest extends LinearOpMode {
     @Override
     public void runOpMode() {
         robot = new CompRobot();
-        robot.init(hardwareMap);
         robot.initVuforia(hardwareMap);
 
         telemetry.addData("Status", "Initialized");
@@ -70,19 +69,23 @@ public class WebcamTest extends LinearOpMode {
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
 
-            robot.carousel(gamepad2.b, gamepad2.y);
             List<Recognition> objects = robot.runTFod();
 
             // Show the elapsed game time, performance, and wheel power.
             telemetry.addData("Status", "\n\tRun Time: " + runtime.toString() + "\n\tTPS: %.2f", 1/(getRuntime()-prevElapsedTime));
             int i = 0;
-            for(Recognition recognition: objects){
-                telemetry.addData(String.format("label (%d)", i), recognition.getLabel());
-                telemetry.addData(String.format("  left,top (%d)", i), "%.03f , %.03f",
-                        recognition.getLeft(), recognition.getTop());
-                telemetry.addData(String.format("  right,bottom (%d)", i), "%.03f , %.03f",
-                        recognition.getRight(), recognition.getBottom());
-                i++;
+            if (objects!= null) {
+                for (Recognition recognition : objects) {
+                    telemetry.addData(String.format("label (%d)", i), recognition.getLabel());
+                    telemetry.addData(String.format("  left,top (%d)", i), "%.03f , %.03f",
+                            recognition.getLeft(), recognition.getTop());
+                    telemetry.addData(String.format("  right,bottom (%d)", i), "%.03f , %.03f",
+                            recognition.getRight(), recognition.getBottom());
+                    i++;
+                }
+            }
+            else{
+                telemetry.addData("No objects", "");
             }
 
             telemetry.update();
