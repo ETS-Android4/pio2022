@@ -102,15 +102,36 @@ public class AutonomousA extends LinearOpMode {
         {
             while(sensorRange.getDistance(DistanceUnit.CM)<30)
             {
-                robot.move(FORWARD_SPEED,0,0);
+                robot.move(-FORWARD_SPEED,0,0);
             }
             List<Recognition> objects = robot.runTFod();
             sleep(100);
+            runtime.reset();
             robot.getAngles();
             robot.direction.goal = Math.PI / 2;
             while(robot.directionError() < Math.PI * 0.0002)
             {
                 robot.move(0,0,robot.direction.update(robot.currentDirection(), runtime.time()));
+            }
+
+            runtime.reset();
+            while(runtime.seconds()<5)
+            {
+                robot.move(-FORWARD_SPEED,0,0);
+            }
+
+            runtime.reset();
+            robot.getAngles();
+            robot.direction.reset();
+            robot.direction.goal = 0;
+            while(robot.directionError() < Math.PI * 0.0002)
+            {
+                robot.move(0,0,robot.direction.update(robot.currentDirection(), runtime.time()));
+            }
+
+            while(sensorRange.getDistance(DistanceUnit.CM)<3)
+            {
+                robot.move(-FORWARD_SPEED,0,0);
             }
         }
 

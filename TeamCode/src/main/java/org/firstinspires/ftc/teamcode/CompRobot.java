@@ -75,8 +75,8 @@ public class CompRobot {
         // Reverse the motor that runs backwards when connected directly to the battery
         leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
         leftFrontDrive.setDirection(DcMotor.Direction.FORWARD);
-        rightBackDrive.setDirection(DcMotor.Direction.REVERSE);  //Motor wires are backwards, put direction to FORWARD when fixed
-        rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
+        rightBackDrive.setDirection(DcMotor.Direction.FORWARD);  //Motor wires are backwards, put direction to FORWARD when fixed
+        rightFrontDrive.setDirection(DcMotor.Direction.REVERSE);
         lifterMotor.setDirection(DcMotor.Direction.FORWARD);
         carouselMotor.setDirection(DcMotor.Direction.FORWARD);
 
@@ -221,7 +221,7 @@ public class CompRobot {
 
     public double currentDirection(){
         getAngles();
-        return angles.firstAngle;
+        return angles.secondAngle;
     }
 
     public double directionError(){
