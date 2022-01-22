@@ -4,6 +4,8 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import java.util.List;
+
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -51,6 +53,8 @@ public class CompRobot {
             lifterMotor, carouselMotor;
     public CRServo bucketServo;
     public BNO055IMU imu;
+    public Orientation angles;
+    public HdgPID direction = new HdgPID(HeadingKp, HeadingKi, HeadingKd);
 
 
     public void init(HardwareMap components){
@@ -70,9 +74,9 @@ public class CompRobot {
         // Most robots need the motor on one side to be reversed to drive forward
         // Reverse the motor that runs backwards when connected directly to the battery
         leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
-        leftFrontDrive.setDirection(DcMotor.Direction.REVERSE);
+        leftFrontDrive.setDirection(DcMotor.Direction.FORWARD);
         rightBackDrive.setDirection(DcMotor.Direction.REVERSE);  //Motor wires are backwards, put direction to FORWARD when fixed
-        rightFrontDrive.setDirection(DcMotor.Direction.REVERSE);
+        rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
         lifterMotor.setDirection(DcMotor.Direction.FORWARD);
         carouselMotor.setDirection(DcMotor.Direction.FORWARD);
 
@@ -211,7 +215,16 @@ public class CompRobot {
 
 
     public String getAngles(){
-        Orientation angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES);
+        angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.RADIANS);
         return String.format("(%.2f, %.2f, %.2f)", angles.firstAngle, angles.secondAngle, angles.thirdAngle);
+    }
+
+    public double currentDirection(){
+        getAngles();
+        return angles.firstAngle;
+    }
+
+    public double directionError(){
+        return direction.error(currentDirection());
     }
 }

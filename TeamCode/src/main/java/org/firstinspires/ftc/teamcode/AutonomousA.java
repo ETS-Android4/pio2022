@@ -32,7 +32,13 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
+
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+
+import java.util.List;
 
 /**
  * This file illustrates the concept of driving a path based on time.
@@ -61,13 +67,14 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 public class AutonomousA extends LinearOpMode {
 
     /* Declare OpMode members. */
-    CompRobot         robot   = new CompRobot();   // Use the common comp robot's hardware
-    private ElapsedTime     runtime = new ElapsedTime();
+    CompRobot robot   = new CompRobot();   // Use the common comp robot's hardware
+    private ElapsedTime runtime = new ElapsedTime();
     double[][] duckPositions = {{0.0,0.0},{0.0,0.0},{0.0,0.0}};
 
     static final double     FORWARD_SPEED = 0.6;
     static final double     TURN_SPEED    = 0.5;
     static final double     STRAFE_SPEED  = 0.5;
+    private DistanceSensor sensorRange;
 
     @Override
     public void runOpMode() {
@@ -79,27 +86,35 @@ public class AutonomousA extends LinearOpMode {
         robot.init(hardwareMap);
         robot.initVuforia(hardwareMap);
 
+        //you can use this as a regular distance sensor
+        sensorRange = hardwareMap.get(DistanceSensor.class, "sensor_range");
+
         // Send telemetry message to signify robot waiting;
-        telemetry.addData("Status", "Ready to run");    //
+        telemetry.addData("Status", "Ready to run");//
         telemetry.update();
+
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
 
-        // Step through each leg of the path, ensuring that the Auto mode has not been stopped along the way
-
-
-        // Step 1: Drive Backward for 1.5 Seconds to the warehouse
-        robot.move(-FORWARD_SPEED, 0, 0);
-        runtime.reset();
-        while (opModeIsActive() && (runtime.seconds() < 1.5)) {
-            telemetry.addData("Path", "Leg 1: %2.5f S Elapsed", runtime.seconds());
-            telemetry.update();
+        //Start near warehouse
+        while(opModeIsActive())
+        {
+            while(sensorRange.getDistance(DistanceUnit.CM)<30)
+            {
+                robot.move(FORWARD_SPEED,0,0);
+            }
+            List<Recognition> objects = robot.runTFod();
+            sleep(100);
+            robot.getAngles();
+            robot.direction.goal = Math.PI / 2;
+            while(robot.directionError() < Math.PI * 0.0002)
+            {
+                robot.move(0,0,robot.direction.update(robot.currentDirection(), runtime.time()));
+            }
         }
 
-        telemetry.addData("Path", "Complete");
-        telemetry.update();
-        sleep(1000);
+
     }
 }
 
