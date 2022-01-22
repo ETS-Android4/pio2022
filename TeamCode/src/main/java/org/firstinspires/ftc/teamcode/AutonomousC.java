@@ -55,14 +55,14 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 
-@Autonomous(name="Autonomous", group="Comp Robot")
+@Autonomous(name="Autonomous with Camera", group="Comp Robot")
 
-public class AutonomousA extends LinearOpMode {
+public class AutonomousC extends LinearOpMode {
 
     /* Declare OpMode members. */
     CompRobot         robot   = new CompRobot();   // Use the common comp robot's hardware
     private ElapsedTime     runtime = new ElapsedTime();
-
+    double[][] duckPositions = {{0.0,0.0},{0.0,0.0},{0.0,0.0}};
 
     static final double     FORWARD_SPEED = 0.6;
     static final double     TURN_SPEED    = 0.5;
@@ -76,6 +76,7 @@ public class AutonomousA extends LinearOpMode {
          * The init() method of the hardware class does all the work here
          */
         robot.init(hardwareMap);
+        robot.initVuforia(hardwareMap);
 
         // Send telemetry message to signify robot waiting;
         telemetry.addData("Status", "Ready to run");    //

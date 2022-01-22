@@ -8,7 +8,6 @@ import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.qualcomm.robotcore.hardware.DistanceSensor;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
@@ -46,10 +45,7 @@ public class CompRobot {
 
     private ElapsedTime eTime  = new ElapsedTime();
     private PIDLoop lifter;
-    private boolean preFloorSwitch = false, secFloor = false, lifterUp = false, drop = false;
-    private double rServoStart;
-    private double[] rServoDuration = {0, 0};
-    private int rServoPhase = 0;
+    private boolean preToggle = false, secFloor = false, lifterUp = false, drop = false;
 
     public DcMotor leftBackDrive, leftFrontDrive, rightBackDrive, rightFrontDrive, intakeMotor,
             lifterMotor, carouselMotor;
@@ -167,58 +163,32 @@ public class CompRobot {
         return String.format("IM: %.2f", intakeMotor.getPower());
     }
 
-    public String lifter(boolean up, boolean down, boolean forward, boolean back, boolean floorSwitch) throws Exception {
+    public String lifter(boolean up, boolean down, boolean forward, boolean back, boolean toggle) throws Exception {
 
-        if((up || !floorSwitch && preFloorSwitch && lifterUp) && !drop){
-            lifter.kp = LifterKp;
-            lifter.ki = LifterKi;
-            lifterUp = true;
-            if(secFloor)lifter.goal = levels[1];
-            else lifter.goal = levels[2];
-
-        } else if(down && lifterUp){
-            drop = true;
-            rServoPhase = 1;
-            rServoStart = eTime.time();
-            lifter.kp = 2*LifterKp;
-            lifter.ki = 0*LifterKi;
-        }
-        switch(rServoPhase){
-            case 0:
-                break;
-            case 1:
-                bucketServo.setPower(-1);
-                if(rServoStart + rServoDuration[0] > eTime.time()){
-                    break;
-                }
-                lifter.goal = levels[1];
-                rServoPhase = 2;
-            case 2:
-                bucketServo.setPower(0);
-                if(Math.abs(lifter.error(lifterMotor.getCurrentPosition())) > lifter.minError) {
-
-                    break;}
-                rServoPhase = 3;
-                rServoStart = eTime.time();
-            case 3:
-                bucketServo.setPower(-0.3);
-                if(rServoStart + rServoDuration[1] > eTime.time()){
-                    break;
-                }
-                bucketServo.setPower(0);
-                lifter.goal = levels[0];
-                rServoPhase = 0;
-                drop = false;
+        if(toggle && !preToggle){
+            if(!lifterUp) {
+                lifter.kp = LifterKp;
+                lifter.ki = LifterKi;
+                lifterUp = true;
+                if (secFloor) lifter.goal = levels[1];
+                else lifter.goal = levels[2];
+            }else{
                 lifterUp = false;
-                break;
-            default:
-                throw new Exception("How");
+                lifter.goal = levels[0];
+                lifter.kp = 2 * LifterKp;
+                lifter.ki = 0 * LifterKi;
+
+            }
+
         }
 
-        if(floorSwitch && !preFloorSwitch){
-            secFloor = !secFloor;
+        if(up){
+            secFloor = false;
+            if(lifterUp) lifter.goal = levels[2];
+        }else if(down){
+            secFloor = true;
+            if(lifterUp) lifter.goal = levels[1];
         }
-
 
         lifterMotor.setPower(stallPower(-lifter.update(lifterMotor.getCurrentPosition(), eTime.time()),0.05));
 
@@ -226,11 +196,10 @@ public class CompRobot {
         else if(back && !drop)bucketServo.setPower(-1);
         else if(!drop) bucketServo.setPower(0);
 
-        preFloorSwitch = floorSwitch;
-
+        preToggle = toggle;
         return "LIFTER MOTOR| POS: " + lifterMotor.getCurrentPosition() + " POW: " + lifterMotor.getPower() +
                 "\n\t" + String.format("PID : (%.2f, %.2f, %.2f)", lifter.p(), lifter.i(), lifter.d()) + " OUTPUT: " + lifter.output() +
-                "\n\tSECOND FLOOR: " + secFloor + " SERVO PHASE: " + rServoPhase;
+                "\n\tSECOND FLOOR: " + secFloor;
     }
 
     public String carousel(boolean forward, boolean backward){
