@@ -57,7 +57,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 @Autonomous(name="Autonomous Warehouse Only", group="Comp Robot")
 
-public class AutonomousW extends LinearOpMode {
+public class AutonomousB extends LinearOpMode {
 
     /* Declare OpMode members. */
     CompRobot         robot   = new CompRobot();   // Use the common comp robot's hardware

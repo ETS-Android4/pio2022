@@ -37,7 +37,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 /**
  * This file illustrates the concept of driving a path based on time.
  * It uses the common Pushbot hardware class to define the drive on the robot.
- * The code is structured as a LinearOpMode
+ * The code is structured as a LinearOpM
+ * ode
  *
  * The code assumes that you do NOT have encoders on the wheels,
  *   otherwise you would use: PushbotAutoDriveByEncoder;
@@ -57,7 +58,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 @Autonomous(name="Autonomous with Camera", group="Comp Robot")
 
-public class AutonomousC extends LinearOpMode {
+public class AutonomousA extends LinearOpMode {
 
     /* Declare OpMode members. */
     CompRobot         robot   = new CompRobot();   // Use the common comp robot's hardware
