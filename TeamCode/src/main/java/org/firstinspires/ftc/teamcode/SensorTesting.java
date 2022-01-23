@@ -46,7 +46,7 @@ import com.qualcomm.robotcore.util.Range;
  */
 
 @TeleOp(name="Sensor Testing", group="Proto Comp Robot")
-@Disabled
+
 public class SensorTesting extends LinearOpMode {
 
     // Declare OpMode members.
@@ -71,7 +71,8 @@ public class SensorTesting extends LinearOpMode {
         intakeMotor = hardwareMap.get(DcMotor.class, "intake_motor");
 
         //Sensor Managers
-        ContinuousSensor2m backDistance = new ContinuousSensor2m(hardwareMap.get(DistanceSensor.class, "back_distance"), 30);
+        ContinuousSensor2m frontDistance = new ContinuousSensor2m(hardwareMap.get(DistanceSensor.class, "front_distance"), 30);
+        ContinuousSensor2m rightDistance = new ContinuousSensor2m(hardwareMap.get(DistanceSensor.class, "right_distance"), 30);
 
         // Most robots need the motor on one side to be reversed to drive forward
         // Reverse the motor that runs backwards when connected directly to the battery
@@ -86,8 +87,8 @@ public class SensorTesting extends LinearOpMode {
         waitForStart();
         runtime.reset();
         prevElapsedTime = 0;
-        backDistance.start();
-
+        frontDistance.start();
+        rightDistance.start();
         //For noise measuring
         double max = Double.MIN_VALUE, min = Double.MAX_VALUE;
 
@@ -118,15 +119,15 @@ public class SensorTesting extends LinearOpMode {
             else intakeMotor.setPower(0);
 
             //Get Distances
-            double backRange = backDistance.getDistance();
-            max = Math.max(max, backRange);
-            min = Math.min(min, backRange);
+            double frontRange = frontDistance.getDistance();
+            double rightRange = rightDistance.getDistance();
+
 
             // Show the elapsed game time, performance, and wheel power.
             telemetry.addData("Status", "\n\tRun Time: " + runtime.toString() + "\n\tTPS: %.2f", 1/(getRuntime()-prevElapsedTime));
             telemetry.addData("Motors", "\n\tLF(%.2f)\tRF(%.2f)\n\tLB(%.2f)\tRB(%.2f)",
                     leftFrontPower, rightFrontPower, leftBackPower, rightBackPower);
-            telemetry.addData("Distances", "\n\tBack: %.2f\n\t\tMinimum: %.2f\n\t\tMaximum: %.2f", backRange, min, max);
+            telemetry.addData("Distances", "\n\tFront: %.2f\n\tRight: %.2f", frontRange, rightRange);
             telemetry.update();
             prevElapsedTime = getRuntime();
         }

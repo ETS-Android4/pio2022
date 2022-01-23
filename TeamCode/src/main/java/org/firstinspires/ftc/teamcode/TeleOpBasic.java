@@ -70,11 +70,9 @@ public class TeleOpBasic extends LinearOpMode {
             // - This uses basic math to combine motions and is easier to drive straight.
             driveData = robot.move(-gamepad1.left_stick_y, gamepad1.left_stick_x, -gamepad1.right_stick_x);
 
-            try {
-                liftData = robot.lifter(gamepad2.dpad_up, gamepad2.dpad_down, gamepad2.dpad_right, gamepad2.dpad_left, gamepad2.x);
-            } catch (Exception e) {
-                liftData = e.toString();
-            }
+
+            liftData = robot.lifter(gamepad2.dpad_up, gamepad2.dpad_down, gamepad2.dpad_right, gamepad2.dpad_left, gamepad2.x);
+
 
             robot.intake(gamepad2.left_bumper, gamepad2.right_bumper);
 

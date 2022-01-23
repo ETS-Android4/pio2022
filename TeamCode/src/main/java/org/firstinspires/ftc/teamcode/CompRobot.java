@@ -5,7 +5,6 @@ import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import java.util.List;
 
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -34,9 +33,9 @@ public class CompRobot {
     private static final String TFOD_MODEL_ASSET = "FreightFrenzy_BCDM.tflite";
     private static final String[] LABELS = {"Ball", "Cube", "Duck", "Marker"};
 
-    public static double HeadingKp = 1, HeadingKi = 0.1, HeadingKd = 0.1;//Variables for the heading PID loop, which can control the robot's heading
+    public static double HeadingKp = 10, HeadingKi = 0.1, HeadingKd = 0.1;//Variables for the heading PID loop, which can control the robot's heading
     public static double LifterKp = 0.005, LifterKi = 0.001, LifterKd = 0.0001;//Variables for the lifter PID loop, which controls how the lifter goes to it's target
-    public static int[] levels = {0,1800,3100};//Each number represents different levels from down to up
+    public static int[] levels = {0,1800,2600};//Each number represents different levels from down to up
 
     //Below a certain power, the motors will not move but make noise
     //This function adds a minimum power to prevent that
@@ -45,8 +44,7 @@ public class CompRobot {
         return input;
     }
 
-    private ElapsedTime eTime  = new ElapsedTime();
-    private PIDLoop lifter;
+    public ElapsedTime eTime  = new ElapsedTime();
     private boolean preToggle = false, secFloor = false, lifterUp = false, drop = false;
 
     public DcMotor leftBackDrive, leftFrontDrive, rightBackDrive, rightFrontDrive, intakeMotor,
@@ -55,6 +53,7 @@ public class CompRobot {
     public BNO055IMU imu;
     public Orientation angles;
     public HdgPID direction = new HdgPID(HeadingKp, HeadingKi, HeadingKd);
+    public PIDLoop lifterPID;
 
 
     public void init(HardwareMap components){
@@ -91,8 +90,8 @@ public class CompRobot {
 
         carouselMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        lifter = new PIDLoop(LifterKp, LifterKi, LifterKd, 0, -1, 1);
-        lifter.minError=15;
+        lifterPID = new PIDLoop(LifterKp, LifterKi, LifterKd, 0, -1, 1);
+        lifterPID.minError=15;
 
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
         parameters.angleUnit           = BNO055IMU.AngleUnit.RADIANS;
@@ -127,7 +126,7 @@ public class CompRobot {
 
         if (tfod != null) {
             tfod.activate();
-            tfod.setZoom(2.5, 16.0/9.0);
+            tfod.setZoom(1 , 16.0/9.0);
         }
     }
 
@@ -167,20 +166,20 @@ public class CompRobot {
         return String.format("IM: %.2f", intakeMotor.getPower());
     }
 
-    public String lifter(boolean up, boolean down, boolean forward, boolean back, boolean toggle) throws Exception {
+    public String lifter(boolean up, boolean down, boolean forward, boolean back, boolean toggle){
 
         if(toggle && !preToggle){
             if(!lifterUp) {
-                lifter.kp = LifterKp;
-                lifter.ki = LifterKi;
+                lifterPID.kp = LifterKp;
+                lifterPID.ki = LifterKi;
                 lifterUp = true;
-                if (secFloor) lifter.goal = levels[1];
-                else lifter.goal = levels[2];
+                if (secFloor) lifterPID.goal = levels[1];
+                else lifterPID.goal = levels[2];
             }else{
                 lifterUp = false;
-                lifter.goal = levels[0];
-                lifter.kp = 2 * LifterKp;
-                lifter.ki = 0 * LifterKi;
+                lifterPID.goal = levels[0];
+                lifterPID.kp = 2 * LifterKp;
+                lifterPID.ki = 0 * LifterKi;
 
             }
 
@@ -188,13 +187,13 @@ public class CompRobot {
 
         if(up){
             secFloor = false;
-            if(lifterUp) lifter.goal = levels[2];
+            if(lifterUp) lifterPID.goal = levels[2];
         }else if(down){
             secFloor = true;
-            if(lifterUp) lifter.goal = levels[1];
+            if(lifterUp) lifterPID.goal = levels[1];
         }
 
-        lifterMotor.setPower(stallPower(-lifter.update(lifterMotor.getCurrentPosition(), eTime.time()),0.05));
+        lifterMotor.setPower(stallPower(-lifterPID.update(lifterMotor.getCurrentPosition(), eTime.time()),0.05));
 
         if(forward && !drop)bucketServo.setPower(1);
         else if(back && !drop)bucketServo.setPower(-1);
@@ -202,7 +201,7 @@ public class CompRobot {
 
         preToggle = toggle;
         return "LIFTER MOTOR| POS: " + lifterMotor.getCurrentPosition() + " POW: " + lifterMotor.getPower() +
-                "\n\t" + String.format("PID : (%.2f, %.2f, %.2f)", lifter.p(), lifter.i(), lifter.d()) + " OUTPUT: " + lifter.output() +
+                "\n\t" + String.format("PID : (%.2f, %.2f, %.2f)", lifterPID.p(), lifterPID.i(), lifterPID.d()) + " OUTPUT: " + lifterPID.output() +
                 "\n\tSECOND FLOOR: " + secFloor;
     }
 

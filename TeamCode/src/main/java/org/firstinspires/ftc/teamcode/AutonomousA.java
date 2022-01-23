@@ -30,7 +30,6 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -64,17 +63,26 @@ import java.util.List;
 
 @Autonomous(name="Autonomous with Camera", group="Comp Robot")
 
-public class AutonomousA extends LinearOpMode {
+public class AutonomousA extends LinearOpMode implements Runnable {
 
     /* Declare OpMode members. */
     CompRobot robot   = new CompRobot();   // Use the common comp robot's hardware
     private ElapsedTime runtime = new ElapsedTime();
     double[][] duckPositions = {{0.0,0.0},{0.0,0.0},{0.0,0.0}};
+    int level = 0, consDetetctions = 0;
 
     static final double     FORWARD_SPEED = 0.6;
     static final double     TURN_SPEED    = 0.5;
     static final double     STRAFE_SPEED  = 0.5;
-    private DistanceSensor sensorRange;
+    private DistanceSensor frontRange, rightRange;
+
+    public void run(){
+        telemetry.addData("Thread", "Started");
+        telemetry.update();
+        while(true) {
+            robot.lifterMotor.setPower(robot.stallPower(-robot.lifterPID.update(robot.lifterMotor.getCurrentPosition(), robot.eTime.time()), 0.05));
+        }
+    }
 
     @Override
     public void runOpMode() {
@@ -87,7 +95,8 @@ public class AutonomousA extends LinearOpMode {
         robot.initVuforia(hardwareMap);
 
         //you can use this as a regular distance sensor
-        sensorRange = hardwareMap.get(DistanceSensor.class, "sensor_range");
+        frontRange = hardwareMap.get(DistanceSensor.class, "front_distance");
+        rightRange = hardwareMap.get(DistanceSensor.class, "right_distance");
 
         // Send telemetry message to signify robot waiting;
         telemetry.addData("Status", "Ready to run");//
@@ -100,38 +109,109 @@ public class AutonomousA extends LinearOpMode {
         //Start near warehouse
         while(opModeIsActive())
         {
-            while(sensorRange.getDistance(DistanceUnit.CM)<30)
-            {
-                robot.move(-FORWARD_SPEED,0,0);
+            sleep(500);
+            while(consDetetctions < 5){
+                boolean success = false;
+                List<Recognition> objects = robot.runTFod();
+                sleep(100);
+                if(objects != null){
+                    for(Recognition recognition : objects){
+                        if(recognition.getLabel().equals("Duck")){
+                            success = true;
+                            if(recognition.getLeft() > 250) {
+                                if(level != 3) consDetetctions = 0;
+                                else consDetetctions++;
+                                level = 3;
+                            }
+                            else {
+                                if(level != 2) consDetetctions = 0;
+                                else consDetetctions++;
+                                level = 2;
+                            }
+                        }
+                    }
+                }
+                if(!success){
+                    if(level != 1) consDetetctions = 0;
+                    else consDetetctions++;
+                    level = 1;
+                }
             }
-            List<Recognition> objects = robot.runTFod();
-            sleep(100);
-            runtime.reset();
-            robot.getAngles();
-            robot.direction.goal = Math.PI / 2;
-            while(robot.directionError() < Math.PI * 0.0002)
+            telemetry.addData("Level", level);
+            telemetry.update();
+
+
+            while(frontRange.getDistance(DistanceUnit.CM)<30)
             {
-                robot.move(0,0,robot.direction.update(robot.currentDirection(), runtime.time()));
+                telemetry.addData("Distance", frontRange.getDistance(DistanceUnit.CM));
+                telemetry.update();
+                robot.move(-1,0,0);
             }
 
             runtime.reset();
-            while(runtime.seconds()<5)
+            while(runtime.seconds()<2)
             {
-                robot.move(-FORWARD_SPEED,0,0);
+                robot.move(0,-1,0);
             }
 
             runtime.reset();
-            robot.getAngles();
-            robot.direction.reset();
-            robot.direction.goal = 0;
-            while(robot.directionError() < Math.PI * 0.0002)
+            while(frontRange.getDistance(DistanceUnit.CM)<42 )
             {
-                robot.move(0,0,robot.direction.update(robot.currentDirection(), runtime.time()));
+                telemetry.addData("Distance", frontRange.getDistance(DistanceUnit.CM));
+                telemetry.update();
+                robot.move(-1,0,0);
+            }
+            robot.move(0,0,0);
+            AutonomousA obj = new AutonomousA();
+            Thread thread = new Thread(obj);
+            thread.start();
+            if(level == 1){
+
+                robot.lifterPID.goal = robot.levels[2];
+                while(Math.abs(robot.lifterPID.error(robot.lifterMotor.getCurrentPosition()))> robot.lifterPID.minError){
+                    idle();
+                }
+                robot.bucketServo.setPower(-1);
+                sleep(1000);
+                robot.bucketServo.setPower(0);
+                sleep(1000);
+            }
+            else if(level == 2){
+                robot.lifterPID.goal = robot.levels[1];
+                while(Math.abs(robot.lifterPID.error(robot.lifterMotor.getCurrentPosition()))> robot.lifterPID.minError){
+                    idle();
+                }
+                robot.bucketServo.setPower(-1);
+                sleep(1000);
+                robot.bucketServo.setPower(0);
+                sleep(1000);
+            }
+            else
+            {
+                robot.lifterPID.goal = robot.levels[2];
+                while(Math.abs(robot.lifterPID.error(robot.lifterMotor.getCurrentPosition()))> robot.lifterPID.minError){
+                    idle();
+                }
+                robot.bucketServo.setPower(1);
+                sleep(1000);
+                robot.bucketServo.setPower(0);
+                sleep(1000);
+            }
+            robot.lifterPID.goal = robot.levels[0];
+            while(Math.abs(robot.lifterPID.error(robot.lifterMotor.getCurrentPosition()))> robot.lifterPID.minError){
+                idle();
+            }
+            thread.interrupt();
+
+
+            runtime.reset();
+            while(runtime.seconds() < 0.3)
+            {
+                robot.move(1,0,0);
             }
 
-            while(sensorRange.getDistance(DistanceUnit.CM)<3)
-            {
-                robot.move(-FORWARD_SPEED,0,0);
+            while(rightRange.getDistance(DistanceUnit.CM) > 10){
+                robot.move(0, 1, 0);
             }
         }
 
