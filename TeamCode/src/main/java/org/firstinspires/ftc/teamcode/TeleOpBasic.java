@@ -45,6 +45,8 @@ public class TeleOpBasic extends LinearOpMode {
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
     private CompRobot robot;
+    private int reverseFactor = 1;
+
 
     //For performance measuring
     private double prevElapsedTime = 0;
@@ -68,7 +70,7 @@ public class TeleOpBasic extends LinearOpMode {
 
             // This mode uses left stick to translate, and right stick to rotate.
             // - This uses basic math to combine motions and is easier to drive straight.
-            driveData = robot.move(-gamepad1.left_stick_y, gamepad1.left_stick_x, -gamepad1.right_stick_x);
+            driveData = robot.move(-gamepad1.left_stick_y*reverseFactor, gamepad1.left_stick_x*reverseFactor, -gamepad1.right_stick_x);
 
 
             liftData = robot.lifter(gamepad2.dpad_up, gamepad2.dpad_down, gamepad2.dpad_right, gamepad2.dpad_left, gamepad2.x);

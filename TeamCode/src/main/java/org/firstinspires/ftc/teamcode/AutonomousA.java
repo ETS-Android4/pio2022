@@ -31,6 +31,8 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -63,26 +65,20 @@ import java.util.List;
 
 @Autonomous(name="Autonomous with Camera", group="Comp Robot")
 
-public class AutonomousA extends LinearOpMode implements Runnable {
+public class AutonomousA extends LinearOpMode{
 
     /* Declare OpMode members. */
     CompRobot robot   = new CompRobot();   // Use the common comp robot's hardware
     private ElapsedTime runtime = new ElapsedTime();
     double[][] duckPositions = {{0.0,0.0},{0.0,0.0},{0.0,0.0}};
-    int level = 0, consDetetctions = 0;
+    int level = 0, consDetections = 0;
 
     static final double     FORWARD_SPEED = 0.6;
     static final double     TURN_SPEED    = 0.5;
     static final double     STRAFE_SPEED  = 0.5;
     private DistanceSensor frontRange, rightRange;
 
-    public void run(){
-        telemetry.addData("Thread", "Started");
-        telemetry.update();
-        while(true) {
-            robot.lifterMotor.setPower(robot.stallPower(-robot.lifterPID.update(robot.lifterMotor.getCurrentPosition(), robot.eTime.time()), 0.05));
-        }
-    }
+
 
     @Override
     public void runOpMode() {
@@ -110,7 +106,7 @@ public class AutonomousA extends LinearOpMode implements Runnable {
         while(opModeIsActive())
         {
             sleep(500);
-            while(consDetetctions < 5){
+            while(consDetections < 5){
                 boolean success = false;
                 List<Recognition> objects = robot.runTFod();
                 sleep(100);
@@ -119,21 +115,21 @@ public class AutonomousA extends LinearOpMode implements Runnable {
                         if(recognition.getLabel().equals("Duck")){
                             success = true;
                             if(recognition.getLeft() > 250) {
-                                if(level != 3) consDetetctions = 0;
-                                else consDetetctions++;
+                                if(level != 3) consDetections = 0;
+                                else consDetections++;
                                 level = 3;
                             }
                             else {
-                                if(level != 2) consDetetctions = 0;
-                                else consDetetctions++;
+                                if(level != 2) consDetections = 0;
+                                else consDetections++;
                                 level = 2;
                             }
                         }
                     }
                 }
                 if(!success){
-                    if(level != 1) consDetetctions = 0;
-                    else consDetetctions++;
+                    if(level != 1) consDetections = 0;
+                    else consDetections++;
                     level = 1;
                 }
             }
@@ -162,46 +158,61 @@ public class AutonomousA extends LinearOpMode implements Runnable {
                 robot.move(-1,0,0);
             }
             robot.move(0,0,0);
-            AutonomousA obj = new AutonomousA();
-            Thread thread = new Thread(obj);
-            thread.start();
+            telemetry.addData("Thread", "About to start");
+            telemetry.update();
+            //Thread thread = new Thread(new AutonomousA());
+            //thread.run();
+            telemetry.addData("Thread", "Moment");
+            telemetry.update();
+            robot.lifterPID.minError = 30;
             if(level == 1){
-
-                robot.lifterPID.goal = robot.levels[2];
-                while(Math.abs(robot.lifterPID.error(robot.lifterMotor.getCurrentPosition()))> robot.lifterPID.minError){
-                    idle();
+                robot.lifter(true,false,false,false,false);
+                while(Math.abs(robot.lifterPID.error(robot.lifterMotor.getCurrentPosition())) > robot.lifterPID.minError){
+                    robot.lifter(true,false,false,false,false);
                 }
-                robot.bucketServo.setPower(-1);
-                sleep(1000);
-                robot.bucketServo.setPower(0);
-                sleep(1000);
+                runtime.reset();
+                while(runtime.seconds() < 1) {
+                    robot.lifter(false, false, false, true, false);
+                }
+                runtime.reset();
+                while(runtime.seconds() < 1) {
+                    robot.lifter(false, false, true, false, false);
+                }
             }
             else if(level == 2){
-                robot.lifterPID.goal = robot.levels[1];
-                while(Math.abs(robot.lifterPID.error(robot.lifterMotor.getCurrentPosition()))> robot.lifterPID.minError){
-                    idle();
+                robot.lifter(true,false,false,false,true);
+                while(Math.abs(robot.lifterPID.error(robot.lifterMotor.getCurrentPosition())) > robot.lifterPID.minError){
+                    robot.lifter(true,false,false,false,false);
                 }
-                robot.bucketServo.setPower(-1);
-                sleep(1000);
-                robot.bucketServo.setPower(0);
-                sleep(1000);
+                runtime.reset();
+                while(runtime.seconds() < 1) {
+                    robot.lifter(false, false, true, false, false);
+                }
+                runtime.reset();
+                while(runtime.seconds() < 1) {
+                    robot.lifter(false, false, false, true, false);
+                }
             }
             else
             {
-                robot.lifterPID.goal = robot.levels[2];
-                while(Math.abs(robot.lifterPID.error(robot.lifterMotor.getCurrentPosition()))> robot.lifterPID.minError){
-                    idle();
+                robot.lifter(true,false,false,false,false);
+                while(Math.abs(robot.lifterPID.error(robot.lifterMotor.getCurrentPosition())) > robot.lifterPID.minError){
+                    robot.lifter(true,false,false,false,false);
                 }
-                robot.bucketServo.setPower(1);
-                sleep(1000);
-                robot.bucketServo.setPower(0);
-                sleep(1000);
+                runtime.reset();
+                while(runtime.seconds() < 1) {
+                    robot.lifter(false, false, true, false, false);
+                }
+                runtime.reset();
+                while(runtime.seconds() < 1) {
+                    robot.lifter(false, false, false, true, false);
+                }
             }
-            robot.lifterPID.goal = robot.levels[0];
-            while(Math.abs(robot.lifterPID.error(robot.lifterMotor.getCurrentPosition()))> robot.lifterPID.minError){
-                idle();
+            robot.lifter(false,true,false,false,false);
+            while(Math.abs(robot.lifterPID.error(robot.lifterMotor.getCurrentPosition())) > robot.lifterPID.minError){
+                robot.lifter(false,false,false,false,false);
             }
-            thread.interrupt();
+            //thread.interrupt();
 
 
             runtime.reset();
@@ -209,10 +220,20 @@ public class AutonomousA extends LinearOpMode implements Runnable {
             {
                 robot.move(1,0,0);
             }
-
             while(rightRange.getDistance(DistanceUnit.CM) > 10){
+                telemetry.addData("Distance", rightRange.getDistance(DistanceUnit.CM));
+                telemetry.update();
                 robot.move(0, 1, 0);
             }
+
+            while(frontRange.getDistance(DistanceUnit.CM)<50)
+            {
+                telemetry.addData("Distance", frontRange.getDistance(DistanceUnit.CM));
+                telemetry.update();
+                robot.move(-1,0,0);
+            }
+            robot.move(0,0,0);
+            stop();
         }
 
 

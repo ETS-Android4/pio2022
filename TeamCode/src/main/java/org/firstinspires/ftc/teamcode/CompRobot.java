@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import java.util.List;
 
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -72,7 +73,7 @@ public class CompRobot {
 
         // Most robots need the motor on one side to be reversed to drive forward
         // Reverse the motor that runs backwards when connected directly to the battery
-        leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
+        leftBackDrive.setDirection(DcMotor.Direction.FORWARD);
         leftFrontDrive.setDirection(DcMotor.Direction.FORWARD);
         rightBackDrive.setDirection(DcMotor.Direction.FORWARD);  //Motor wires are backwards, put direction to FORWARD when fixed
         rightFrontDrive.setDirection(DcMotor.Direction.REVERSE);
@@ -169,28 +170,20 @@ public class CompRobot {
     public String lifter(boolean up, boolean down, boolean forward, boolean back, boolean toggle){
 
         if(toggle && !preToggle){
-            if(!lifterUp) {
-                lifterPID.kp = LifterKp;
-                lifterPID.ki = LifterKi;
-                lifterUp = true;
-                if (secFloor) lifterPID.goal = levels[1];
+            secFloor = !secFloor;
+            if(lifterUp){
+                if(secFloor) lifterPID.goal = levels[1];
                 else lifterPID.goal = levels[2];
-            }else{
-                lifterUp = false;
-                lifterPID.goal = levels[0];
-                lifterPID.kp = 2 * LifterKp;
-                lifterPID.ki = 0 * LifterKi;
-
             }
-
         }
 
         if(up){
-            secFloor = false;
-            if(lifterUp) lifterPID.goal = levels[2];
+            lifterUp = true;
+            if(secFloor) lifterPID.goal = levels[1];
+            else lifterPID.goal = levels[2];
         }else if(down){
-            secFloor = true;
-            if(lifterUp) lifterPID.goal = levels[1];
+            lifterUp = false;
+            lifterPID.goal = levels[0];
         }
 
         lifterMotor.setPower(stallPower(-lifterPID.update(lifterMotor.getCurrentPosition(), eTime.time()),0.05));
