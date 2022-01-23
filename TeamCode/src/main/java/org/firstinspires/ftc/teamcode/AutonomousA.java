@@ -106,6 +106,7 @@ public class AutonomousA extends LinearOpMode{
         while(opModeIsActive())
         {
             sleep(500);
+            //Duck Detection
             while(consDetections < 5){
                 boolean success = false;
                 List<Recognition> objects = robot.runTFod();
@@ -136,20 +137,20 @@ public class AutonomousA extends LinearOpMode{
             telemetry.addData("Level", level);
             telemetry.update();
 
-
+            //Move until 30cm away from wall
             while(frontRange.getDistance(DistanceUnit.CM)<30)
             {
                 telemetry.addData("Distance", frontRange.getDistance(DistanceUnit.CM));
                 telemetry.update();
                 robot.move(-1,0,0);
             }
-
+            //Move left for 2 seconds
             runtime.reset();
             while(runtime.seconds()<2)
             {
                 robot.move(0,-1,0);
             }
-
+            //Move away from wall until 42cm away
             runtime.reset();
             while(frontRange.getDistance(DistanceUnit.CM)<42 )
             {
@@ -158,23 +159,21 @@ public class AutonomousA extends LinearOpMode{
                 robot.move(-1,0,0);
             }
             robot.move(0,0,0);
-            telemetry.addData("Thread", "About to start");
-            telemetry.update();
-            //Thread thread = new Thread(new AutonomousA());
-            //thread.run();
-            telemetry.addData("Thread", "Moment");
-            telemetry.update();
+
             robot.lifterPID.minError = 30;
             if(level == 1){
+                //Move lifter up
                 robot.lifter(true,false,false,false,false);
                 while(Math.abs(robot.lifterPID.error(robot.lifterMotor.getCurrentPosition())) > robot.lifterPID.minError){
                     robot.lifter(true,false,false,false,false);
                 }
                 runtime.reset();
+                //move bucket forward
                 while(runtime.seconds() < 1) {
                     robot.lifter(false, false, false, true, false);
                 }
                 runtime.reset();
+                //move bucket back
                 while(runtime.seconds() < 1) {
                     robot.lifter(false, false, true, false, false);
                 }
@@ -209,23 +208,24 @@ public class AutonomousA extends LinearOpMode{
                 }
             }
             robot.lifter(false,true,false,false,false);
+            //move lift down
             while(Math.abs(robot.lifterPID.error(robot.lifterMotor.getCurrentPosition())) > robot.lifterPID.minError){
                 robot.lifter(false,false,false,false,false);
             }
-            //thread.interrupt();
 
-
+            //Move back to clear goal
             runtime.reset();
             while(runtime.seconds() < 0.3)
             {
                 robot.move(1,0,0);
             }
+            //Move towards right wall until 10cm close
             while(rightRange.getDistance(DistanceUnit.CM) > 10){
                 telemetry.addData("Distance", rightRange.getDistance(DistanceUnit.CM));
                 telemetry.update();
                 robot.move(0, 1, 0);
             }
-
+            //Adjust robot to be in square
             while(frontRange.getDistance(DistanceUnit.CM)<50)
             {
                 telemetry.addData("Distance", frontRange.getDistance(DistanceUnit.CM));
