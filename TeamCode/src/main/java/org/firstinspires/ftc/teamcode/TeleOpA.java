@@ -29,22 +29,13 @@
 
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.qualcomm.robotcore.util.Range;
-
-import java.util.UnknownFormatConversionException;
 
 
 /**
- * This file is for the manual (TeleOp) phase
+ * This file is for the manual (Teleop) phase
  */
 
 @TeleOp(name="TeleOp Assisted", group="Comp Robot")
@@ -54,6 +45,8 @@ public class TeleOpA extends LinearOpMode {
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
     private CompRobot robot;
+    private int reverseFactor = 1;
+
 
     //For performance measuring
     private double prevElapsedTime = 0;
@@ -61,7 +54,7 @@ public class TeleOpA extends LinearOpMode {
     @Override
     public void runOpMode() {
         robot = new CompRobot();
-        robot.init(hardwareMap);
+        robot.initDrive(hardwareMap);
 
         telemetry.addData("Status", "Initialized");
         telemetry.update();
@@ -77,22 +70,18 @@ public class TeleOpA extends LinearOpMode {
 
             // This mode uses left stick to translate, and right stick to rotate.
             // - This uses basic math to combine motions and is easier to drive straight.
-            driveData = robot.move(-gamepad1.left_stick_y, gamepad1.left_stick_x, -gamepad1.right_stick_x);
+            driveData = robot.move(-gamepad1.left_stick_y*reverseFactor, gamepad1.left_stick_x*reverseFactor, -gamepad1.right_stick_x);
 
-            try {
-                liftData = robot.lifter(gamepad1.dpad_up, gamepad1.dpad_down, gamepad1.dpad_right, gamepad1.dpad_left, gamepad1.x);
-            } catch (Exception e) {
-                liftData = e.toString();
-            }
 
-            robot.intake(gamepad1.left_bumper, gamepad1.right_bumper);
+            liftData = robot.lifter(gamepad2.dpad_up, gamepad2.dpad_down,  gamepad2.right_bumper, gamepad2.right_trigger>0.4, gamepad2.right_stick_button);
+            robot.intake(gamepad2.x, gamepad2.a);
 
+            robot.carousel(gamepad2.b, gamepad2.y);
 
             // Show the elapsed game time, performance, and wheel power.
             telemetry.addData("Status", "\n\tRun Time: " + runtime.toString() + "\n\tTPS: %.2f", 1/(getRuntime()-prevElapsedTime));
             telemetry.addData("Motors", driveData);
             telemetry.addData("Motors", liftData);
-            telemetry.addData("Orientation", robot.getAngles());
 
             telemetry.update();
             prevElapsedTime = getRuntime();

@@ -54,7 +54,7 @@ public class TeleOpBasic extends LinearOpMode {
     @Override
     public void runOpMode() {
         robot = new CompRobot();
-        robot.init(hardwareMap);
+        robot.initDrive(hardwareMap);
 
         telemetry.addData("Status", "Initialized");
         telemetry.update();
@@ -73,10 +73,8 @@ public class TeleOpBasic extends LinearOpMode {
             driveData = robot.move(-gamepad1.left_stick_y*reverseFactor, gamepad1.left_stick_x*reverseFactor, -gamepad1.right_stick_x);
 
 
-            liftData = robot.lifter(gamepad2.dpad_up, gamepad2.dpad_down, gamepad2.dpad_right, gamepad2.dpad_left, gamepad2.x);
-
-
-            robot.intake(gamepad2.left_bumper, gamepad2.right_bumper);
+            liftData = robot.manualLifter(gamepad2.dpad_up, gamepad2.dpad_down, false, false, gamepad2.right_bumper, gamepad2.right_trigger>0.4);
+            robot.intake(gamepad2.x, gamepad2.a);
 
             robot.carousel(gamepad2.b, gamepad2.y);
 

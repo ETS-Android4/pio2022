@@ -31,8 +31,6 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -63,9 +61,9 @@ import java.util.List;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 
-@Autonomous(name="Auto Red Carousel", group="Comp Robot")
+@Autonomous(name="Auto Blue Warehouse", group="Comp Robot")
 
-public class AutonomousA extends LinearOpMode{
+public class AutonomousD extends LinearOpMode{
 
     /* Declare OpMode members. */
     CompRobot robot   = new CompRobot();   // Use the common comp robot's hardware
@@ -73,11 +71,10 @@ public class AutonomousA extends LinearOpMode{
     double[][] duckPositions = {{0.0,0.0},{0.0,0.0},{0.0,0.0}};
     int level = 0, consDetections = 0;
 
-    static final double     FORWARD_SPEED = 0.3;
-    static final double     TURN_SPEED    = 0.2;
-    static final double     STRAFE_SPEED  = 0.6;
-    static final double     CAROUSEL_SPEED = 0.20;
-    private DistanceSensor frontRange, rightRange, leftRange;
+    static final double     FORWARD_SPEED = 0.6;
+    static final double     TURN_SPEED    = 0.5;
+    static final double     STRAFE_SPEED  = 0.5;
+    private DistanceSensor frontRange, rightRange;
 
 
 
@@ -94,7 +91,6 @@ public class AutonomousA extends LinearOpMode{
         //you can use this as a regular distance sensor
         frontRange = hardwareMap.get(DistanceSensor.class, "front_distance");
         rightRange = hardwareMap.get(DistanceSensor.class, "right_distance");
-        leftRange = hardwareMap.get(DistanceSensor.class, "left_distance");
 
         // Send telemetry message to signify robot waiting;
         telemetry.addData("Status", "Ready to run");//
@@ -139,158 +135,18 @@ public class AutonomousA extends LinearOpMode{
             telemetry.addData("Level", level);
             telemetry.update();
 
-            //Move until 75cm away from wall
-            while(frontRange.getDistance(DistanceUnit.CM)<75)
-            {
-                telemetry.addData("Level", level);
-                telemetry.addData("Distance", frontRange.getDistance(DistanceUnit.CM));
-                telemetry.update();
-                robot.move(-FORWARD_SPEED,0,0);
-            }
-
-            runtime.reset();
-            robot.direction.reset();
-            robot.direction.goal = -1.5;
-            robot.direction.minError = 0.1;
-            while(Math.abs(robot.direction.error(robot.currentDirection())) > robot.direction.minError){
-                telemetry.addData("Level", level);
-                telemetry.update();
-                robot.move(0,0,robot.direction.update(robot.currentDirection(),runtime.seconds()));
-            }
-            telemetry.addData("Level", level);
-            telemetry.addData("Lift", "Ready");
-            telemetry.update();
-            robot.move(0,0,0);
-            robot.lifterPID.minError = 50;
-            robot.dropperPID.minError = 30;
-            if(level == 1){
-
-            }
-            else if(level == 2){
-
-            }
-            else if(level == 3){
-                robot.lifterPID.goal = CompRobot.levels[3];
-                runtime.reset();
-                while(Math.abs(robot.lifterPID.error(robot.lifterMotor.getCurrentPosition())) > robot.lifterPID.minError){
-                    robot.lifterMotor.setPower(-robot.lifterPID.update(robot.lifterMotor.getCurrentPosition(), runtime.time()));
-                    telemetry.addData("Level", level);
-                    telemetry.update();
-                }
-                runtime.reset();
-                while(runtime.time() < 1.1){
-                    robot.bucketServo.setPower(1);
-                }
-                robot.bucketServo.setPower(0.05);
-            }
-            else{
-                telemetry.addData("fuck", "shit");
-                stop();
-            }
-            robot.lifterPID.goal = CompRobot.levels[1];
-            runtime.reset();
-            while(Math.abs(robot.lifterPID.error(robot.lifterMotor.getCurrentPosition())) > robot.lifterPID.minError){
-                robot.lifterMotor.setPower(-robot.lifterPID.update(robot.lifterMotor.getCurrentPosition(), runtime.time()));
-                robot.dropperPID.kp = CompRobot.dropperKp;
-                robot.dropperPID.ki = CompRobot.dropperKi;
-                robot.dropperPID.kd = CompRobot.dropperKd;
-                robot.dropperMotor.setPower(robot.lifterPID.update(robot.lifterMotor.getCurrentPosition(), runtime.time()));
-                telemetry.addData("Level", level);
-                telemetry.update();
-            }
-            robot.lifterPID.goal = CompRobot.levels[0];
-            runtime.reset();
-            while(runtime.time() < 0.8){
-                robot.bucketServo.setPower(-1);
-            }
-            robot.bucketServo.setPower(0);
-            runtime.reset();
-            while(Math.abs(robot.lifterPID.error(robot.lifterMotor.getCurrentPosition())) > robot.lifterPID.minError){
-                robot.lifterMotor.setPower(-robot.lifterPID.update(robot.lifterMotor.getCurrentPosition(), runtime.time()));
-                robot.dropperPID.kp = CompRobot.dropperKp;
-                robot.dropperPID.ki = CompRobot.dropperKi;
-                robot.dropperPID.kd = CompRobot.dropperKd;
-                robot.dropperMotor.setPower(robot.lifterPID.update(robot.lifterMotor.getCurrentPosition(), runtime.time()));
-                telemetry.addData("Level", level);
-                telemetry.update();
-            }
-            robot.dropperMotor.setPower(0);
-            robot.lifterMotor.setPower(0);
-            runtime.reset();
-            robot.direction.reset();
-            robot.direction.goal = -Math.PI/2;
-            robot.direction.minError = 0.1;
-            while(Math.abs(robot.direction.error(robot.currentDirection())) > robot.direction.minError){
-                telemetry.addData("Level", level);
-                telemetry.update();
-                robot.move(0,0,robot.direction.update(robot.currentDirection(),runtime.seconds()));
-            }
-            while(frontRange.getDistance(DistanceUnit.CM)>12)
+            //Move until 30cm away from wall
+            while(frontRange.getDistance(DistanceUnit.CM)<30)
             {
                 telemetry.addData("Distance", frontRange.getDistance(DistanceUnit.CM));
                 telemetry.update();
-                robot.move(FORWARD_SPEED,0,0);
+                robot.move(-1,0,0);
             }
-            while(leftRange.getDistance(DistanceUnit.CM)>30)
-            {
-                telemetry.addData("Distance", leftRange.getDistance(DistanceUnit.CM));
-                telemetry.update();
-                robot.move(0,-STRAFE_SPEED,0);
-            }
-            runtime.reset();
-            while(runtime.time() < 0.4)
-            {
-                telemetry.addData("Finalizing Distance", "All good");
-                telemetry.update();
-                robot.move(0,-STRAFE_SPEED*0.4,0);
-            }
-            robot.move(0,-0,0);
-
-            runtime.reset();
-            while(runtime.time() < 2){
-                telemetry.addData("Spinning", "All good");
-                robot.carouselMotor.setPower(-CAROUSEL_SPEED);
-            }
-            runtime.reset();
-            while(runtime.time() < 0.4)
-            {
-                telemetry.addData("Going away from carousel", "All good");
-                telemetry.update();
-                robot.move(0,STRAFE_SPEED,0);
-            }
-            runtime.reset();
-            robot.direction.reset();
-            robot.direction.goal = 0;
-            robot.direction.minError = 0.1;
-            while(Math.abs(robot.direction.error(robot.currentDirection())) > robot.direction.minError){
-                telemetry.addData("Level", level);
-                telemetry.update();
-                robot.move(0,0,robot.direction.update(robot.currentDirection(),runtime.seconds()));
-            }
-            while(frontRange.getDistance(DistanceUnit.CM)<65)
-            {
-                telemetry.addData("Level", level);
-                telemetry.addData("Distance", frontRange.getDistance(DistanceUnit.CM));
-                telemetry.update();
-                robot.move(-FORWARD_SPEED,0,0);
-            }
-            while(rightRange.getDistance(DistanceUnit.CM)>20)
-            {
-                telemetry.addData("Level", level);
-                telemetry.addData("Distance", frontRange.getDistance(DistanceUnit.CM));
-                telemetry.update();
-                robot.move(0,STRAFE_SPEED,0);
-            }
-            robot.move(0,0,0);
-            /*
             //Move left for 2 seconds
             runtime.reset();
-            robot.direction.goal = 0;
-            robot.direction.minError = 0.1;
-
-            while(runtime.seconds()<2)
+            while(runtime.seconds()<1)
             {
-                robot.move(0,-0.5,robot.direction.update(robot.currentDirection(),runtime.seconds()));
+                robot.move(0,-1,0);
             }
             //Move away from wall until 42cm away
             runtime.reset();
@@ -298,7 +154,7 @@ public class AutonomousA extends LinearOpMode{
             {
                 telemetry.addData("Distance", frontRange.getDistance(DistanceUnit.CM));
                 telemetry.update();
-                robot.move(-0.2,0,0);
+                robot.move(-1,0,0);
             }
             robot.move(0,0,0);
 
@@ -354,7 +210,6 @@ public class AutonomousA extends LinearOpMode{
             while(Math.abs(robot.lifterPID.error(robot.lifterMotor.getCurrentPosition())) > robot.lifterPID.minError){
                 robot.lifter(false,false,false,false,false);
             }
-
             //Move back to clear goal
             runtime.reset();
             while(runtime.seconds() < 0.3)
@@ -362,24 +217,41 @@ public class AutonomousA extends LinearOpMode{
                 robot.move(1,0,0);
             }
             //Move towards right wall until 10cm close
-            while(rightRange.getDistance(DistanceUnit.CM) > 10){
+            /*while(rightRange.getDistance(DistanceUnit.CM) > 10){
                 telemetry.addData("Distance", rightRange.getDistance(DistanceUnit.CM));
                 telemetry.update();
                 robot.move(0, 1, 0);
+            }*/
+
+            //Spin the robot 90 degrees left
+            //TODO
+            //Rotate Right
+            runtime.reset();
+            robot.direction.goal = -Math.PI/2;
+            robot.direction.minError = 0.1;
+            while(Math.abs(robot.direction.error(robot.currentDirection())) > robot.direction.minError){
+                robot.move(0,0,robot.direction.update(robot.currentDirection(),runtime.seconds()));
             }
-            //Adjust robot to be in square
-            while(frontRange.getDistance(DistanceUnit.CM)<50)
+            robot.move(0,0,0);
+
+            //Strafe left to the the wall
+            runtime.reset();
+            while( runtime.seconds() < 3){
+                telemetry.addData("Distance", rightRange.getDistance(DistanceUnit.CM));
+                telemetry.update();
+                robot.move(0, -1, robot.direction.update(robot.currentDirection(),runtime.seconds()));
+            }
+
+            //Park in the warehouse
+            while(frontRange.getDistance(DistanceUnit.CM)>30)
             {
                 telemetry.addData("Distance", frontRange.getDistance(DistanceUnit.CM));
                 telemetry.update();
-                robot.move(-1,0,0);
+                robot.move(1,0,0);
             }
-
-             */
             robot.move(0,0,0);
+
             stop();
-
-
         }
 
 

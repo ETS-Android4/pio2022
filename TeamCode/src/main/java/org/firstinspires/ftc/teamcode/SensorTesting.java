@@ -51,7 +51,8 @@ public class SensorTesting extends LinearOpMode {
 
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
-    private DcMotor leftBackDrive, leftFrontDrive, rightBackDrive, rightFrontDrive, intakeMotor;
+    private CompRobot robot;
+    private int reverseFactor = 1;
 
     //For performance measuring
     private double prevElapsedTime = 0;
@@ -61,34 +62,16 @@ public class SensorTesting extends LinearOpMode {
         telemetry.addData("Status", "Initialized");
         telemetry.update();
 
-        // Initialize the hardware variables. Note that the strings used here as parameters
-        // to 'get' must correspond to the names assigned during the robot configuration
-        // step (using the FTC Robot Controller app on the phone).
-        leftBackDrive = hardwareMap.get(DcMotor.class, "left_back_drive");
-        leftFrontDrive = hardwareMap.get(DcMotor.class, "left_front_drive");
-        rightBackDrive = hardwareMap.get(DcMotor.class, "right_back_drive");
-        rightFrontDrive = hardwareMap.get(DcMotor.class, "right_front_drive");
-        intakeMotor = hardwareMap.get(DcMotor.class, "intake_motor");
-
-        //Sensor Managers
-        ContinuousSensor2m frontDistance = new ContinuousSensor2m(hardwareMap.get(DistanceSensor.class, "front_distance"), 30);
-        ContinuousSensor2m rightDistance = new ContinuousSensor2m(hardwareMap.get(DistanceSensor.class, "right_distance"), 30);
-
-        // Most robots need the motor on one side to be reversed to drive forward
-        // Reverse the motor that runs backwards when connected directly to the battery
-        leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
-        leftFrontDrive.setDirection(DcMotorSimple.Direction.REVERSE);
-        rightBackDrive.setDirection(DcMotor.Direction.REVERSE);  //Motor wires are backwards, put direction to FORWARD when fixed
-        rightFrontDrive.setDirection(DcMotorSimple.Direction.FORWARD);
-
+        robot = new CompRobot();
 
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
         runtime.reset();
         prevElapsedTime = 0;
-        frontDistance.start();
-        rightDistance.start();
+        robot.initDrive(hardwareMap);
+        robot.initDistance(hardwareMap);
+        robot.startDistance();
         //For noise measuring
         double max = Double.MIN_VALUE, min = Double.MAX_VALUE;
 
@@ -96,38 +79,29 @@ public class SensorTesting extends LinearOpMode {
         while (opModeIsActive()) {
 
 
+            String driveData, liftData;
+
             // This mode uses left stick to translate, and right stick to rotate.
             // - This uses basic math to combine motions and is easier to drive straight.
-            double drive = -gamepad1.left_stick_y; //Move left stick up/down to move forward/backward
-            double strafe = gamepad1.left_stick_x; //Move left stick right/left to move right/left
-            double turn = -gamepad1.right_stick_x; //Move right stick right/left to turn right/left
+            driveData = robot.move(-gamepad1.left_stick_y*reverseFactor, gamepad1.left_stick_x*reverseFactor, -gamepad1.right_stick_x);
 
-            double leftFrontPower = CompRobot.stallPower(Range.clip(drive - turn + strafe, -1.0, 1.0), 0.1);
-            double leftBackPower = CompRobot.stallPower(Range.clip(drive - turn - strafe, -1.0, 1.0),0.1);
-            double rightFrontPower = CompRobot.stallPower(Range.clip(drive + turn - strafe, -1.0, 1.0),0.1);
-            double rightBackPower = CompRobot.stallPower(Range.clip(drive + turn + strafe, -1.0, 1.0),0.1);
 
-            // Send calculated power to wheels
-            leftBackDrive.setPower(leftBackPower);
-            leftFrontDrive.setPower(leftFrontPower);
-            rightBackDrive.setPower(rightBackPower);
-            rightFrontDrive.setPower(rightFrontPower);
+            liftData = robot.manualLifter(gamepad2.dpad_up, gamepad2.dpad_down, false, false, gamepad2.right_bumper, gamepad2.right_trigger>0.4);
+            robot.intake(gamepad2.x, gamepad2.a);
 
-            //Intake motor control
-            if(gamepad1.left_bumper)  intakeMotor.setPower(-1);
-            else if(gamepad1.right_bumper) intakeMotor.setPower(1);
-            else intakeMotor.setPower(0);
+            robot.carousel(gamepad2.b, gamepad2.y);
 
-            //Get Distances
-            double frontRange = frontDistance.getDistance();
-            double rightRange = rightDistance.getDistance();
+
+
+
 
 
             // Show the elapsed game time, performance, and wheel power.
             telemetry.addData("Status", "\n\tRun Time: " + runtime.toString() + "\n\tTPS: %.2f", 1/(getRuntime()-prevElapsedTime));
-            telemetry.addData("Motors", "\n\tLF(%.2f)\tRF(%.2f)\n\tLB(%.2f)\tRB(%.2f)",
-                    leftFrontPower, rightFrontPower, leftBackPower, rightBackPower);
-            telemetry.addData("Distances", "\n\tFront: %.2f\n\tRight: %.2f", frontRange, rightRange);
+            telemetry.addData("Motors", driveData);
+            telemetry.addData("Motors", liftData);
+            telemetry.addData("Distances", "\n\tFront: %.2f\n\tRight: %.2f\n\tLeft: %.2f", robot.frontDistance.getDistance(), robot.rightDistance.getDistance(), robot.leftDistance.getDistance());
+            telemetry.addData("Heading", robot.currentDirection());
             telemetry.update();
             prevElapsedTime = getRuntime();
         }

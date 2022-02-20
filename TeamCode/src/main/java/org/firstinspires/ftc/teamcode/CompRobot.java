@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import java.util.List;
 
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -34,9 +35,11 @@ public class CompRobot {
     private static final String TFOD_MODEL_ASSET = "FreightFrenzy_BCDM.tflite";
     private static final String[] LABELS = {"Ball", "Cube", "Duck", "Marker"};
 
-    public static double HeadingKp = 10, HeadingKi = 0.1, HeadingKd = 0.1;//Variables for the heading PID loop, which can control the robot's heading
+    public static double HeadingKp = 1, HeadingKi = 0.7, HeadingKd = 0.07;//Variables for the heading PID loop, which can control the robot's heading
     public static double LifterKp = 0.005, LifterKi = 0.001, LifterKd = 0.0001;//Variables for the lifter PID loop, which controls how the lifter goes to it's target
-    public static int[] levels = {0,1800,2600};//Each number represents different levels from down to up
+    public static double dropperKp = 0.05, dropperKi = 0.001, dropperKd = 0.0001;
+    public static int[] levels = {0,800,1800,2400};//Each number represents different levels from down to up
+    public ContinuousSensor2m frontDistance, rightDistance, leftDistance;
 
     //Below a certain power, the motors will not move but make noise
     //This function adds a minimum power to prevent that
@@ -49,15 +52,15 @@ public class CompRobot {
     private boolean preToggle = false, secFloor = false, lifterUp = false, drop = false;
 
     public DcMotor leftBackDrive, leftFrontDrive, rightBackDrive, rightFrontDrive, intakeMotor,
-            lifterMotor, carouselMotor;
+            lifterMotor, carouselMotor, dropperMotor;
     public CRServo bucketServo;
     public BNO055IMU imu;
     public Orientation angles;
     public HdgPID direction = new HdgPID(HeadingKp, HeadingKi, HeadingKd);
-    public PIDLoop lifterPID;
+    public PIDLoop lifterPID, dropperPID;
 
 
-    public void init(HardwareMap components){
+    public void initDrive(HardwareMap components){
 
         leftBackDrive = components.get(DcMotor.class, "left_back_drive");
         leftFrontDrive = components.get(DcMotor.class, "left_front_drive");
@@ -66,6 +69,7 @@ public class CompRobot {
         intakeMotor = components.get(DcMotor.class, "intake_motor");
         lifterMotor = components.get(DcMotor.class, "lifter_motor");
         carouselMotor = components.get(DcMotor.class, "carousel_motor");
+        dropperMotor = components.get(DcMotor.class, "dropper_motor");
 
         bucketServo = components.get(CRServo.class, "bucket_servo");
 
@@ -73,8 +77,8 @@ public class CompRobot {
 
         // Most robots need the motor on one side to be reversed to drive forward
         // Reverse the motor that runs backwards when connected directly to the battery
-        leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
-        leftFrontDrive.setDirection(DcMotor.Direction.FORWARD);
+        leftBackDrive.setDirection(DcMotor.Direction.FORWARD);
+        leftFrontDrive.setDirection(DcMotor.Direction.REVERSE);
         rightBackDrive.setDirection(DcMotor.Direction.FORWARD);  //Motor wires are backwards, put direction to FORWARD when fixed
         rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
         lifterMotor.setDirection(DcMotor.Direction.FORWARD);
@@ -90,9 +94,12 @@ public class CompRobot {
         lifterMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         carouselMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        dropperMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         lifterPID = new PIDLoop(LifterKp, LifterKi, LifterKd, 0, -1, 1);
         lifterPID.minError=15;
+        dropperPID = new PIDLoop(0,0,0, 0, -1, 1);
+        dropperPID.minError=15;
 
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
         parameters.angleUnit           = BNO055IMU.AngleUnit.RADIANS;
@@ -131,8 +138,24 @@ public class CompRobot {
         }
     }
 
+    public void initDistance(HardwareMap components, double refreshRate){
+        frontDistance = new ContinuousSensor2m(components.get(DistanceSensor.class, "front_distance"), refreshRate);
+        rightDistance = new ContinuousSensor2m(components.get(DistanceSensor.class, "right_distance"), refreshRate);
+        leftDistance = new ContinuousSensor2m(components.get(DistanceSensor.class, "left_distance"), refreshRate);
+    }
+
+    public void initDistance(HardwareMap components){
+        initDistance(components, 30);
+    }
+
     public List<Recognition> runTFod(){
         return tfod.getUpdatedRecognitions();
+    }
+
+    public void startDistance(){
+        frontDistance.start();
+        rightDistance.start();
+        leftDistance.start();
     }
 
     public String move(double drive, double strafe, double turn){
@@ -178,10 +201,16 @@ public class CompRobot {
         }
 
         if(up){
+            dropperPID.kp = 0;
+            dropperPID.ki = 0;
+            dropperPID.kd = 0;
             lifterUp = true;
             if(secFloor) lifterPID.goal = levels[1];
             else lifterPID.goal = levels[2];
         }else if(down){
+            dropperPID.kp = dropperKp;
+            dropperPID.ki = dropperKi;
+            dropperPID.kd = dropperKd;
             lifterUp = false;
             lifterPID.goal = levels[0];
         }
@@ -191,12 +220,51 @@ public class CompRobot {
         if(forward && !drop)bucketServo.setPower(1);
         else if(back && !drop)bucketServo.setPower(-1);
         else if(!drop) bucketServo.setPower(0);
+        else bucketServo.setPower(0.05);
 
         preToggle = toggle;
         return "LIFTER MOTOR| POS: " + lifterMotor.getCurrentPosition() + " POW: " + lifterMotor.getPower() +
                 "\n\t" + String.format("PID : (%.2f, %.2f, %.2f)", lifterPID.p(), lifterPID.i(), lifterPID.d()) + " OUTPUT: " + lifterPID.output() +
                 "\n\tSECOND FLOOR: " + secFloor;
     }
+
+    public String manualLifter(boolean up1, boolean down1, boolean up2, boolean down2, boolean forward, boolean back){
+
+        if(up1){
+            lifterMotor.setPower(-0.8);
+            dropperMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+            dropperMotor.setPower(0);
+        }
+        else if(down1){
+            lifterMotor.setPower(0.8);
+            dropperMotor.setPower(-1);
+        }
+        else{
+            lifterMotor.setPower(0);
+            dropperMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+            dropperMotor.setPower(0);
+        }
+/*
+        if(up2){
+            dropperMotor.setPower(0);
+        }
+        else if(down2){
+            dropperMotor.setPower(-1);
+        }
+        else{
+            dropperMotor.setPower(0);
+        }
+        */
+
+        if(forward)bucketServo.setPower(1);
+        else if(back)bucketServo.setPower(-1);
+        else bucketServo.setPower(0);
+
+
+        return "LIFTER MOTOR\n\t POS: " + lifterMotor.getCurrentPosition() + " POW: " + lifterMotor.getPower()+
+                "DROPPER MOTOR\n\t POS: " + dropperMotor.getCurrentPosition() + " POW: " + dropperMotor.getPower();
+    }
+
 
     public String carousel(boolean forward, boolean backward){
         if(forward)carouselMotor.setPower(0.25);
