@@ -63,178 +63,211 @@ import java.util.List;
 
 @Autonomous(name="Auto Blue Carousel", group="Comp Robot")
 
-public class AutonomousB extends LinearOpMode{
+public class AutonomousB extends LinearOpMode {
 
-    /* Declare OpMode members. */
-    CompRobot robot   = new CompRobot();   // Use the common comp robot's hardware
-    private ElapsedTime runtime = new ElapsedTime();
-    double[][] duckPositions = {{0.0,0.0},{0.0,0.0},{0.0,0.0}};
-    int level = 0, consDetections = 0;
+        /* Declare OpMode members. */
+        CompRobot robot = new CompRobot();   // Use the common comp robot's hardware
+        private ElapsedTime runtime = new ElapsedTime();
+        double[][] duckPositions = {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}};
+        int level = 0, consDetections = 0;
 
-    static final double     FORWARD_SPEED = 0.6;
-    static final double     TURN_SPEED    = 0.5;
-    static final double     STRAFE_SPEED  = 0.5;
-    private DistanceSensor frontRange, leftRange;
-
-
-
-    @Override
-    public void runOpMode() {
-
-        /*
-         * Initialize the drive system variables.
-         * The init() method of the hardware class does all the work here
-         */
-        robot.initDrive(hardwareMap);
-        robot.initVuforia(hardwareMap);
-
-        //you can use this as a regular distance sensor
-        frontRange = hardwareMap.get(DistanceSensor.class, "front_distance");
-        leftRange = hardwareMap.get(DistanceSensor.class, "left_distance");
-
-        // Send telemetry message to signify robot waiting;
-        telemetry.addData("Status", "Ready to run");//
-        telemetry.update();
+        static final double FORWARD_SPEED = 0.3;
+        static final double TURN_SPEED = 0.2;
+        static final double STRAFE_SPEED = 0.6;
+        static final double CAROUSEL_SPEED = 0.20;
+        private DistanceSensor frontRange, rightRange, leftRange;
 
 
-        // Wait for the game to start (driver presses PLAY)
-        waitForStart();
+        @Override
+        public void runOpMode() {
 
-        //Start near warehouse
-        while(opModeIsActive())
-        {
-            sleep(500);
-            //Duck Detection
-            while(consDetections < 5){
-                boolean success = false;
-                List<Recognition> objects = robot.runTFod();
-                sleep(100);
-                if(objects != null){
-                    for(Recognition recognition : objects){
-                        if(recognition.getLabel().equals("Duck")){
-                            success = true;
-                            if(recognition.getLeft() > 250) {
-                                if(level != 3) consDetections = 0;
-                                else consDetections++;
-                                level = 3;
-                            }
-                            else {
-                                if(level != 2) consDetections = 0;
-                                else consDetections++;
-                                level = 2;
+            /*
+             * Initialize the drive system variables.
+             * The init() method of the hardware class does all the work here
+             */
+            robot.initDrive(hardwareMap);
+            robot.initVuforia(hardwareMap);
+
+            //you can use this as a regular distance sensor
+            frontRange = hardwareMap.get(DistanceSensor.class, "front_distance");
+            rightRange = hardwareMap.get(DistanceSensor.class, "right_distance");
+            leftRange = hardwareMap.get(DistanceSensor.class, "left_distance");
+
+            // Send telemetry message to signify robot waiting;
+            telemetry.addData("Status", "Ready to run");//
+            telemetry.update();
+
+
+            // Wait for the game to start (driver presses PLAY)
+            waitForStart();
+
+            //Start near warehouse
+            while (opModeIsActive()) {
+                sleep(500);
+                //Duck Detection
+                while (consDetections < 5) {
+                    boolean success = false;
+                    List<Recognition> objects = robot.runTFod();
+                    sleep(100);
+                    if (objects != null) {
+                        for (Recognition recognition : objects) {
+                            if (recognition.getLabel().equals("Duck")) {
+                                success = true;
+                                if (recognition.getRight() > 250) {
+                                    if (level != 3) consDetections = 0;
+                                    else consDetections++;
+                                    level = 3;
+                                } else {
+                                    if (level != 2) consDetections = 0;
+                                    else consDetections++;
+                                    level = 2;
+                                }
                             }
                         }
                     }
+                    if (!success) {
+                        if (level != 1) consDetections = 0;
+                        else consDetections++;
+                        level = 1;
+                    }
                 }
-                if(!success){
-                    if(level != 1) consDetections = 0;
-                    else consDetections++;
-                    level = 1;
-                }
-            }
-            telemetry.addData("Level", level);
-            telemetry.update();
+                telemetry.addData("Level", level);
+                telemetry.update();
 
-            //Move until 30cm away from wall
-            while(frontRange.getDistance(DistanceUnit.CM)<30)
-            {
-                telemetry.addData("Distance", frontRange.getDistance(DistanceUnit.CM));
-                telemetry.update();
-                robot.move(-1,0,0);
-            }
-            //Move left for 2 seconds
-            runtime.reset();
-            while(runtime.seconds()<1)
-            {
-                robot.move(0,1,0);
-            }
-            //Move away from wall until 42cm away
-            runtime.reset();
-            while(frontRange.getDistance(DistanceUnit.CM)<42 )
-            {
-                telemetry.addData("Distance", frontRange.getDistance(DistanceUnit.CM));
-                telemetry.update();
-                robot.move(-1,0,0);
-            }
-            robot.move(0,0,0);
+                //Move until 75cm away from wall
+                while (frontRange.getDistance(DistanceUnit.CM) < 75) {
+                    telemetry.addData("Level", level);
+                    telemetry.addData("Distance", frontRange.getDistance(DistanceUnit.CM));
+                    telemetry.update();
+                    robot.move(-FORWARD_SPEED, 0, 0);
+                }
 
-            robot.lifterPID.minError = 30;
-            if(level == 1){
-                //Move lifter up
-                robot.lifter(true,false,false,false,false);
-                while(Math.abs(robot.lifterPID.error(robot.lifterMotor.getCurrentPosition())) > robot.lifterPID.minError){
-                    robot.lifter(true,false,false,false,false);
-                }
                 runtime.reset();
-                //move bucket forward
-                while(runtime.seconds() < 1) {
-                    robot.lifter(false, false, false, true, false);
+                robot.direction.reset();
+                robot.direction.goal = -1.5;
+                robot.direction.minError = 0.1;
+                while (Math.abs(robot.direction.error(robot.currentDirection())) > robot.direction.minError) {
+                    telemetry.addData("Level", level);
+                    telemetry.update();
+                    robot.move(0, 0, robot.direction.update(robot.currentDirection(), runtime.seconds()));
                 }
-                runtime.reset();
-                //move bucket back
-                while(runtime.seconds() < 1) {
-                    robot.lifter(false, false, true, false, false);
-                }
-            }
-            else if(level == 2){
-                robot.lifter(true,false,false,false,true);
-                while(Math.abs(robot.lifterPID.error(robot.lifterMotor.getCurrentPosition())) > robot.lifterPID.minError){
-                    robot.lifter(true,false,false,false,false);
-                }
-                runtime.reset();
-                while(runtime.seconds() < 1) {
-                    robot.lifter(false, false, true, false, false);
-                }
-                runtime.reset();
-                while(runtime.seconds() < 1) {
-                    robot.lifter(false, false, false, true, false);
-                }
-            }
-            else
-            {
-                robot.lifter(true,false,false,false,false);
-                while(Math.abs(robot.lifterPID.error(robot.lifterMotor.getCurrentPosition())) > robot.lifterPID.minError){
-                    robot.lifter(true,false,false,false,false);
-                }
-                runtime.reset();
-                while(runtime.seconds() < 1) {
-                    robot.lifter(false, false, true, false, false);
-                }
-                runtime.reset();
-                while(runtime.seconds() < 1) {
-                    robot.lifter(false, false, false, true, false);
-                }
-            }
-            robot.lifter(false,true,false,false,false);
-            //move lift down
-            while(Math.abs(robot.lifterPID.error(robot.lifterMotor.getCurrentPosition())) > robot.lifterPID.minError){
-                robot.lifter(false,false,false,false,false);
-            }
+                telemetry.addData("Level", level);
+                telemetry.addData("Lift", "Ready");
+                telemetry.update();
+                robot.move(0, 0, 0);
+                robot.lifterPID.minError = 50;
+                robot.dropperPID.minError = 30;
+                if (level == 1) {
 
-            //Move back to clear goal
-            runtime.reset();
-            while(runtime.seconds() < 0.3)
-            {
-                robot.move(1,0,0);
+                } else if (level == 2) {
+
+                } else if (level == 3) {
+                    robot.lifterPID.goal = CompRobot.levels[3];
+                    runtime.reset();
+                    while (Math.abs(robot.lifterPID.error(robot.lifterMotor.getCurrentPosition())) > robot.lifterPID.minError) {
+                        robot.lifterMotor.setPower(-robot.lifterPID.update(robot.lifterMotor.getCurrentPosition(), runtime.time()));
+                        telemetry.addData("Level", level);
+                        telemetry.update();
+                    }
+                    runtime.reset();
+                    while (runtime.time() < 1.1) {
+                        robot.bucketServo.setPower(1);
+                    }
+                    robot.bucketServo.setPower(0.05);
+                } else {
+                    telemetry.addData("fuck", "shit");
+                    stop();
+                }
+                robot.lifterPID.goal = CompRobot.levels[1];
+                runtime.reset();
+                while (Math.abs(robot.lifterPID.error(robot.lifterMotor.getCurrentPosition())) > robot.lifterPID.minError) {
+                    robot.lifterMotor.setPower(-robot.lifterPID.update(robot.lifterMotor.getCurrentPosition(), runtime.time()));
+                    robot.dropperPID.kp = CompRobot.dropperKp;
+                    robot.dropperPID.ki = CompRobot.dropperKi;
+                    robot.dropperPID.kd = CompRobot.dropperKd;
+                    robot.dropperMotor.setPower(robot.lifterPID.update(robot.lifterMotor.getCurrentPosition(), runtime.time()));
+                    telemetry.addData("Level", level);
+                    telemetry.update();
+                }
+                robot.lifterPID.goal = CompRobot.levels[0];
+                runtime.reset();
+                while (runtime.time() < 0.8) {
+                    robot.bucketServo.setPower(-1);
+                }
+                robot.bucketServo.setPower(0);
+                runtime.reset();
+                while (Math.abs(robot.lifterPID.error(robot.lifterMotor.getCurrentPosition())) > robot.lifterPID.minError) {
+                    robot.lifterMotor.setPower(-robot.lifterPID.update(robot.lifterMotor.getCurrentPosition(), runtime.time()));
+                    robot.dropperPID.kp = CompRobot.dropperKp;
+                    robot.dropperPID.ki = CompRobot.dropperKi;
+                    robot.dropperPID.kd = CompRobot.dropperKd;
+                    robot.dropperMotor.setPower(robot.lifterPID.update(robot.lifterMotor.getCurrentPosition(), runtime.time()));
+                    telemetry.addData("Level", level);
+                    telemetry.update();
+                }
+                robot.dropperMotor.setPower(0);
+                robot.lifterMotor.setPower(0);
+                runtime.reset();
+                robot.direction.reset();
+                robot.direction.goal = Math.PI / 2;
+                robot.direction.minError = 0.1;
+                while (Math.abs(robot.direction.error(robot.currentDirection())) > robot.direction.minError) {
+                    telemetry.addData("Level", level);
+                    telemetry.update();
+                    robot.move(0, 0, robot.direction.update(robot.currentDirection(), runtime.seconds()));
+                }
+                while (frontRange.getDistance(DistanceUnit.CM) > 12) {
+                    telemetry.addData("Distance", frontRange.getDistance(DistanceUnit.CM));
+                    telemetry.update();
+                    robot.move(FORWARD_SPEED, 0, 0);
+                }
+                while (leftRange.getDistance(DistanceUnit.CM) > 30) {
+                    telemetry.addData("Distance", leftRange.getDistance(DistanceUnit.CM));
+                    telemetry.update();
+                    robot.move(0, STRAFE_SPEED, 0);
+                }
+                runtime.reset();
+                while (runtime.time() < 0.4) {
+                    telemetry.addData("Finalizing Distance", "All good");
+                    telemetry.update();
+                    robot.move(0, STRAFE_SPEED * 0.4, 0);
+                }
+                robot.move(0, -0, 0);
+
+                runtime.reset();
+                while (runtime.time() < 2) {
+                    telemetry.addData("Spinning", "All good");
+                    robot.carouselMotor.setPower(CAROUSEL_SPEED);
+                }
+                runtime.reset();
+                while (runtime.time() < 0.4) {
+                    telemetry.addData("Going away from carousel", "All good");
+                    telemetry.update();
+                    robot.move(0, -STRAFE_SPEED, 0);
+                }
+                runtime.reset();
+                robot.direction.reset();
+                robot.direction.goal = 0;
+                robot.direction.minError = 0.1;
+                while (Math.abs(robot.direction.error(robot.currentDirection())) > robot.direction.minError) {
+                    telemetry.addData("Level", level);
+                    telemetry.update();
+                    robot.move(0, 0, robot.direction.update(robot.currentDirection(), runtime.seconds()));
+                }
+                while (frontRange.getDistance(DistanceUnit.CM) < 65) {
+                    telemetry.addData("Level", level);
+                    telemetry.addData("Distance", frontRange.getDistance(DistanceUnit.CM));
+                    telemetry.update();
+                    robot.move(FORWARD_SPEED, 0, 0);
+                }
+                while (rightRange.getDistance(DistanceUnit.CM) > 20) {
+                    telemetry.addData("Level", level);
+                    telemetry.addData("Distance", frontRange.getDistance(DistanceUnit.CM));
+                    telemetry.update();
+                    robot.move(0, -STRAFE_SPEED, 0);
+                }
+                robot.move(0, 0, 0);
             }
-            //Move towards right wall until 10cm close
-            while(leftRange.getDistance(DistanceUnit.CM) > 10){
-                telemetry.addData("Distance", leftRange.getDistance(DistanceUnit.CM));
-                telemetry.update();
-                robot.move(0, -1, 0);
-            }
-            //Adjust robot to be in square
-            while(frontRange.getDistance(DistanceUnit.CM)<50)
-            {
-                telemetry.addData("Distance", frontRange.getDistance(DistanceUnit.CM));
-                telemetry.update();
-                robot.move(-1,0,0);
-            }
-            robot.move(0,0,0);
-            stop();
         }
 
-
     }
-}
-

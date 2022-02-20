@@ -376,9 +376,6 @@ public class AutonomousA extends LinearOpMode{
             }
 
              */
-            robot.move(0,0,0);
-            stop();
-
 
         }
 
