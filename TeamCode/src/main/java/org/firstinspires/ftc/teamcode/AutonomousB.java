@@ -159,9 +159,11 @@ public class AutonomousB extends LinearOpMode {
                 robot.dropperPID.minError = 30;
                 if (level == 1) {
 
-                } else if (level == 2) {
+                }
+                else if (level == 2) {
 
-                } else if (level == 3) {
+                }
+                else if (level == 3) {
                     robot.lifterPID.goal = CompRobot.levels[3];
                     runtime.reset();
                     while (Math.abs(robot.lifterPID.error(robot.lifterMotor.getCurrentPosition())) > robot.lifterPID.minError) {
@@ -174,7 +176,8 @@ public class AutonomousB extends LinearOpMode {
                         robot.bucketServo.setPower(1);
                     }
                     robot.bucketServo.setPower(0.05);
-                } else {
+                }
+                else {
                     telemetry.addData("fuck", "shit");
                     stop();
                 }
@@ -221,8 +224,8 @@ public class AutonomousB extends LinearOpMode {
                     telemetry.update();
                     robot.move(FORWARD_SPEED, 0, 0);
                 }
-                while (leftRange.getDistance(DistanceUnit.CM) > 30) {
-                    telemetry.addData("Distance", leftRange.getDistance(DistanceUnit.CM));
+                while (rightRange.getDistance(DistanceUnit.CM) > 30) {
+                    telemetry.addData("Distance", rightRange.getDistance(DistanceUnit.CM));
                     telemetry.update();
                     robot.move(0, STRAFE_SPEED, 0);
                 }
@@ -232,7 +235,7 @@ public class AutonomousB extends LinearOpMode {
                     telemetry.update();
                     robot.move(0, STRAFE_SPEED * 0.4, 0);
                 }
-                robot.move(0, -0, 0);
+                robot.move(0, 0, 0);
 
                 runtime.reset();
                 while (runtime.time() < 2) {
